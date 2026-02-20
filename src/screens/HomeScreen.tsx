@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
-import { ShieldAlert, Sun, Moon, CalendarDays } from 'lucide-react-native';
+import { ShieldAlert, Sun, Moon, CalendarDays, MapPin, Map, FileWarning } from 'lucide-react-native';
 import { getUserSetup, SetupInfo } from '../utils/storage';
 import { differenceInDays, addDays, parseISO, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -22,14 +22,19 @@ export default function HomeScreen() {
         try {
             const start = parseISO(data.startDate);
             const today = new Date();
-            const end = addDays(start, data.totalDays);
+
+            // Yol izni şafağı kısaltır (-), Ceza şafağı uzatır (+)
+            const extraDays = (data.penalty || 0) - (data.roadLeave || 0);
+            const effectiveTotalDays = data.totalDays + extraDays;
+
+            const end = addDays(start, effectiveTotalDays);
 
             let passed = differenceInDays(today, start);
             if (passed < 0) passed = 0; // Henüz başlamamış
-            if (passed > data.totalDays) passed = data.totalDays; // Bitmiş
+            if (passed > effectiveTotalDays) passed = effectiveTotalDays; // Bitmiş
 
-            const remaining = data.totalDays - passed;
-            const percentage = (passed / data.totalDays) * 100;
+            const remaining = effectiveTotalDays - passed;
+            const percentage = (passed / effectiveTotalDays) * 100;
 
             setStats({
                 passed,
@@ -66,13 +71,33 @@ export default function HomeScreen() {
             contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />}
         >
-            <View className="mt-8 flex-row justify-between items-center mb-10">
+            <View className="mt-8 flex-row justify-between items-center mb-6">
                 <View>
-                    <Text className="text-gray-400 text-lg uppercase tracking-wider font-semibold">Şafak</Text>
-                    <Text className="text-white text-4xl font-bold mt-1">SAYAR</Text>
+                    <Text className="text-gray-400 text-lg uppercase tracking-wider font-semibold">
+                        Merhaba, {setup.userName}
+                    </Text>
+                    <Text className="text-white text-4xl font-bold mt-1">Şafak SAYAR</Text>
                 </View>
                 <View className="bg-[#10b98115] p-3 rounded-full">
                     <ShieldAlert size={32} color="#10b981" />
+                </View>
+            </View>
+
+            {/* Lokasyon Bilgileri */}
+            <View className="flex-row mb-8 bg-safakSecondary p-4 rounded-2xl border border-gray-700">
+                <View className="flex-1 flex-row items-center border-r border-gray-700 pr-2">
+                    <MapPin size={20} color="#f43f5e" className="mr-2" />
+                    <View>
+                        <Text className="text-gray-400 text-xs">Memleket</Text>
+                        <Text className="text-white font-medium" numberOfLines={1}>{setup.hometown}</Text>
+                    </View>
+                </View>
+                <View className="flex-1 flex-row items-center pl-4">
+                    <Map size={20} color="#3b82f6" className="mr-2" />
+                    <View>
+                        <Text className="text-gray-400 text-xs">Birlik</Text>
+                        <Text className="text-white font-medium" numberOfLines={1}>{setup.militaryCity}</Text>
+                    </View>
                 </View>
             </View>
 
@@ -102,7 +127,7 @@ export default function HomeScreen() {
             </View>
 
             {/* İlerleme Çubuğu */}
-            <View className="bg-safakSecondary p-6 rounded-2xl border border-gray-700">
+            <View className="bg-safakSecondary p-6 rounded-2xl border border-gray-700 mb-8">
                 <View className="flex-row justify-between mb-3">
                     <Text className="text-white font-semibold">Tüm İlerleme</Text>
                     <Text className="text-safakPrimary font-bold">{stats.percentage.toFixed(1)}%</Text>
@@ -112,6 +137,22 @@ export default function HomeScreen() {
                         className="h-full bg-safakPrimary rounded-full"
                         style={{ width: `${stats.percentage}%` }}
                     />
+                </View>
+            </View>
+
+            {/* Ekstra Bilgiler (İzin & Ceza) */}
+            <View className="bg-safakSecondary p-5 rounded-2xl border border-gray-700 flex-row justify-between">
+                <View className="items-center flex-1 border-r border-gray-700">
+                    <Text className="text-gray-400 text-xs mb-1">Yol İzni</Text>
+                    <Text className="text-white font-bold">{setup.roadLeave || 0} Gün</Text>
+                </View>
+                <View className="items-center flex-1 border-r border-gray-700">
+                    <Text className="text-gray-400 text-xs mb-1">Kullanılan İzin</Text>
+                    <Text className="text-white font-bold">{setup.usedLeave || 0} Gün</Text>
+                </View>
+                <View className="items-center flex-1">
+                    <Text className="text-gray-400 text-xs mb-1">Ceza</Text>
+                    <Text className="text-red-400 font-bold">{setup.penalty || 0} Gün</Text>
                 </View>
             </View>
 

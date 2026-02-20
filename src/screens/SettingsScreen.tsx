@@ -62,7 +62,6 @@ export default function SettingsScreen() {
 
             <View className="flex-1 justify-end items-center mb-8">
                 <Text className="text-gray-600 text-sm">Şafak Sayar Pro v1.0.0</Text>
-                <Text className="text-gray-600 text-xs mt-1">Made with ❤️ for soldiers</Text>
             </View>
         </View>
     );

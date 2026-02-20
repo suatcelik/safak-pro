@@ -4,9 +4,16 @@ export const IS_FIRST_LAUNCH_KEY = 'isFirstLaunch';
 export const USER_SETUP_KEY = 'userSetupInfo';
 
 export interface SetupInfo {
-    militaryType: 'short' | 'long' | 'paid' | 'officer'; // Kisa donem, uzun, bedelli vb.
-    startDate: string; // ISO string
+    militaryType: 'short' | 'long' | 'paid' | 'officer';
+    startDate: string;
     totalDays: number;
+    // Yeni eklenen alanlar
+    userName?: string;
+    hometown?: string;
+    militaryCity?: string;
+    usedLeave?: number;
+    penalty?: number;
+    roadLeave?: number;
 }
 
 export const setFirstLaunch = async (isFirst: boolean) => {
@@ -21,7 +28,7 @@ export const getFirstLaunch = async (): Promise<boolean> => {
     try {
         const value = await AsyncStorage.getItem(IS_FIRST_LAUNCH_KEY);
         if (value === null) {
-            return true; // Varsayılan olarak ilk giriş kabul edilir
+            return true;
         }
         return JSON.parse(value);
     } catch (e) {
