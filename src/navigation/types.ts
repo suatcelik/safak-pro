@@ -8,4 +8,5 @@ export type RootStackParamList = {
 export type MainTabParamList = {
     Home: undefined;
     Settings: undefined;
+    Calendar: undefined; // Takvim için eklendi
 };
