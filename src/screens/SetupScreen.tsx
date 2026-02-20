@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // useEffect eklendi
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { saveUserSetup, SetupInfo } from '../utils/storage';
+import { saveUserSetup, getUserSetup, SetupInfo } from '../utils/storage'; // getUserSetup eklendi
 import { CalendarDays, Briefcase, CheckCircle, User, MapPin, Map, CarFront, ShieldAlert, Palmtree } from 'lucide-react-native';
 
 type SetupNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Setup'>;
@@ -18,6 +18,7 @@ const MILITARY_TYPES = [
 export default function SetupScreen() {
     const navigation = useNavigation<SetupNavigationProp>();
 
+    // Form State'leri
     const [userName, setUserName] = useState('');
     const [hometown, setHometown] = useState('');
     const [militaryCity, setMilitaryCity] = useState('');
@@ -26,6 +27,24 @@ export default function SetupScreen() {
     const [usedLeave, setUsedLeave] = useState('');
     const [penalty, setPenalty] = useState('');
     const [roadLeave, setRoadLeave] = useState('');
+
+    // Sayfa açıldığında mevcut verileri yükle
+    useEffect(() => {
+        const loadInitialData = async () => {
+            const existingData = await getUserSetup(); //
+            if (existingData) {
+                setUserName(existingData.userName || '');
+                setHometown(existingData.hometown || '');
+                setMilitaryCity(existingData.militaryCity || '');
+                setSelectedType(existingData.militaryType);
+                setStartDate(existingData.startDate);
+                setUsedLeave(existingData.usedLeave?.toString() || '');
+                setPenalty(existingData.penalty?.toString() || '');
+                setRoadLeave(existingData.roadLeave?.toString() || '');
+            }
+        };
+        loadInitialData();
+    }, []);
 
     const handleSave = async () => {
         const typeObj = MILITARY_TYPES.find(t => t.id === selectedType);
@@ -48,8 +67,8 @@ export default function SetupScreen() {
             roadLeave: parseInt(roadLeave) || 0,
         };
 
-        await saveUserSetup(payload);
-        navigation.replace('MainTabs');
+        await saveUserSetup(payload); //
+        navigation.replace('MainTabs'); //
     };
 
     return (
@@ -177,7 +196,7 @@ export default function SetupScreen() {
                         className="bg-safakPrimary w-full py-4 rounded-xl shadow-lg flex-row justify-center items-center"
                         onPress={handleSave}
                     >
-                        <Text className="text-safakDark font-bold text-xl mr-2">Şafak Saymaya Başla</Text>
+                        <Text className="text-safakDark font-bold text-xl mr-2">Bilgileri Güncelle</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
