@@ -7,10 +7,11 @@ import {
 } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { getUserSetup, SetupInfo } from '../utils/storage';
+import { useStore } from '../store/useStore'; // YENİ: Zustand Store eklendi
 import { differenceInDays, addDays, parseISO, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
-// --- YENİ: Sadece bu bileşen saniyede bir render edilecek ---
+// --- Sadece bu bileşen saniyede bir render edilecek ---
 const DailyProgressCircle = ({ remaining }: { remaining: number }) => {
     const [dayProgress, setDayProgress] = useState(0);
 
@@ -64,9 +65,12 @@ const DailyProgressCircle = ({ remaining }: { remaining: number }) => {
 };
 
 export default function HomeScreen() {
-    const [setup, setSetup] = useState<SetupInfo | null>(null);
+    // YENİ: setup state'ini artık doğrudan Zustand'dan okuyoruz ve güncelliyoruz
+    const setup = useStore((state) => state.setup);
+    const setSetup = useStore((state) => state.setSetup);
+
     const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState<string | null>(null); // Hata state'i eklendi
+    const [error, setError] = useState<string | null>(null);
     const [stats, setStats] = useState({ passed: 0, remaining: 0, percentage: 0, targetDate: '', totalDays: 0 });
 
     const loadData = async () => {
@@ -74,8 +78,7 @@ export default function HomeScreen() {
             setError(null);
             const data = await getUserSetup();
             if (data && data.startDate) {
-                setSetup(data);
-                calculateStats(data);
+                setSetup(data); // AsyncStorage'dan okunan veriyi global state'e yaz
             } else {
                 setError("Kullanıcı bilgileri bulunamadı.");
             }
@@ -125,11 +128,19 @@ export default function HomeScreen() {
         setRefreshing(false);
     };
 
+    // İlk açılışta verileri yükle
     useEffect(() => {
         loadData();
     }, []);
 
-    // --- YENİ: Ağır hesaplamalar useMemo ile optimize edildi ---
+    // YENİ: Setup verisi global olarak ne zaman değişirse (örneğin ayarlardan) hesaplamaları otomatik yap!
+    useEffect(() => {
+        if (setup) {
+            calculateStats(setup);
+            setError(null); // Kurulum geldiğinde hata mesajını temizle
+        }
+    }, [setup]);
+
     const milestones = useMemo(() => {
         if (!stats.totalDays) return [];
 
@@ -172,7 +183,7 @@ export default function HomeScreen() {
         }));
 
         return [...processedValidMilestones, ...processedLockedMilestones];
-    }, [stats.totalDays]);
+    }, [stats.totalDays, stats.passed]);
 
     if (error) {
         return (

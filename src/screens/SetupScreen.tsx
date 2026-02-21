@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react'; // useEffect eklendi
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import DateTimePicker from '@react-native-community/datetimepicker'; // Takvim paketi eklendi
 import { RootStackParamList } from '../navigation/types';
-import { saveUserSetup, getUserSetup, SetupInfo } from '../utils/storage'; // getUserSetup eklendi
+import { saveUserSetup, getUserSetup, SetupInfo } from '../utils/storage';
+import { useStore } from '../store/useStore'; // Zustand Store eklendi
 import { CalendarDays, Briefcase, CheckCircle, User, MapPin, Map, CarFront, ShieldAlert, Palmtree } from 'lucide-react-native';
 
 type SetupNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Setup'>;
@@ -18,12 +20,20 @@ const MILITARY_TYPES = [
 export default function SetupScreen() {
     const navigation = useNavigation<SetupNavigationProp>();
 
+    // Zustand'dan setSetup fonksiyonunu alıyoruz
+    const setSetup = useStore((state) => state.setSetup);
+
     // Form State'leri
     const [userName, setUserName] = useState('');
     const [hometown, setHometown] = useState('');
     const [militaryCity, setMilitaryCity] = useState('');
     const [selectedType, setSelectedType] = useState<typeof MILITARY_TYPES[number]['id']>('short');
+
+    // Takvim (Date Picker) State'leri
+    const [date, setDate] = useState(new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+
     const [usedLeave, setUsedLeave] = useState('');
     const [penalty, setPenalty] = useState('');
     const [roadLeave, setRoadLeave] = useState('');
@@ -31,13 +41,17 @@ export default function SetupScreen() {
     // Sayfa açıldığında mevcut verileri yükle
     useEffect(() => {
         const loadInitialData = async () => {
-            const existingData = await getUserSetup(); //
+            const existingData = await getUserSetup();
             if (existingData) {
                 setUserName(existingData.userName || '');
                 setHometown(existingData.hometown || '');
                 setMilitaryCity(existingData.militaryCity || '');
                 setSelectedType(existingData.militaryType);
+
+                // Tarih verilerini hem string hem de Date objesi olarak ayarla
                 setStartDate(existingData.startDate);
+                setDate(new Date(existingData.startDate));
+
                 setUsedLeave(existingData.usedLeave?.toString() || '');
                 setPenalty(existingData.penalty?.toString() || '');
                 setRoadLeave(existingData.roadLeave?.toString() || '');
@@ -45,6 +59,21 @@ export default function SetupScreen() {
         };
         loadInitialData();
     }, []);
+
+    // Takvimden tarih seçildiğinde çalışacak fonksiyon
+    const handleDateChange = (event: any, selectedDate?: Date) => {
+        // Android'de seçim yapıldıktan sonra takvimi kapatmak için
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+        }
+
+        if (selectedDate) {
+            setDate(selectedDate);
+            // Seçilen tarihi YYYY-MM-DD formatına çevir
+            const formattedDate = selectedDate.toISOString().split('T')[0];
+            setStartDate(formattedDate);
+        }
+    };
 
     const handleSave = async () => {
         const typeObj = MILITARY_TYPES.find(t => t.id === selectedType);
@@ -67,8 +96,14 @@ export default function SetupScreen() {
             roadLeave: parseInt(roadLeave) || 0,
         };
 
-        await saveUserSetup(payload); //
-        navigation.replace('MainTabs'); //
+        // 1. Cihaz hafızasına kaydet (AsyncStorage)
+        await saveUserSetup(payload);
+
+        // 2. Zustand Store'a kaydet (Uygulama anında güncellensin)
+        setSetup(payload);
+
+        // 3. Ana sayfaya yönlendir
+        navigation.replace('MainTabs');
     };
 
     return (
@@ -143,16 +178,29 @@ export default function SetupScreen() {
                 {/* Tarih ve İzinler */}
                 <Text className="text-gray-300 font-semibold mb-3 text-lg">Tarih ve İzinler</Text>
                 <View className="gap-y-4 mb-8">
-                    <View className="flex-row items-center bg-safakSecondary rounded-xl p-4 border border-gray-700">
+
+                    {/* YENİ: Takvim Seçici (Date Picker) Alanı */}
+                    <TouchableOpacity
+                        onPress={() => setShowDatePicker(true)}
+                        className="flex-row items-center bg-safakSecondary rounded-xl p-4 border border-gray-700"
+                    >
                         <CalendarDays size={24} color="#94a3b8" />
-                        <TextInput
-                            className="flex-1 ml-3 text-white text-lg font-medium outline-none"
-                            value={startDate}
-                            onChangeText={setStartDate}
-                            placeholder="Sülüs Tarihi (YYYY-AA-GG)"
-                            placeholderTextColor="#64748b"
+                        <Text className={`flex-1 ml-3 text-lg font-medium ${startDate ? 'text-white' : 'text-[#64748b]'}`}>
+                            {startDate ? startDate : "Sülüs Tarihi Seçin"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    {/* Takvim Bileşeni - Sadece showDatePicker true olduğunda görünür */}
+                    {showDatePicker && (
+                        <DateTimePicker
+                            value={date}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={handleDateChange}
+                            maximumDate={new Date(2030, 0, 1)}
+                            minimumDate={new Date(2020, 0, 1)}
                         />
-                    </View>
+                    )}
 
                     <View className="flex-row items-center bg-safakSecondary rounded-xl p-4 border border-gray-700">
                         <CarFront size={24} color="#94a3b8" />
