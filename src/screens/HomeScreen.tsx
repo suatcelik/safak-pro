@@ -3,7 +3,7 @@ import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import {
     ShieldAlert, Sun, CalendarDays, MapPin, Map,
     Footprints, ShieldCheck, Star, CheckCircle,
-    TrendingDown, Layers, Clock, Target, Sunrise
+    TrendingDown, Layers, Clock, Target, Sunrise, Lock // Kilit ikonu eklendi
 } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { getUserSetup, SetupInfo } from '../utils/storage';
@@ -15,7 +15,6 @@ export default function HomeScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [stats, setStats] = useState({ passed: 0, remaining: 0, percentage: 0, targetDate: '', totalDays: 0 });
 
-    // 24 saatlik gün ilerlemesi için state
     const [dayProgress, setDayProgress] = useState(0);
 
     const loadData = async () => {
@@ -35,23 +34,16 @@ export default function HomeScreen() {
             const usedLeave = data.usedLeave || 0;
             const penalty = data.penalty || 0;
 
-            // Gerçekte geçen takvim günü
             const realPassed = differenceInDays(today, start);
-
-            // Yol İzni: Askerlikten sayıldığı için "Geçen Gün"e eklenir, şafaktan düşer.
             let passed = realPassed + roadLeave;
             if (passed < 0) passed = 0;
 
-            // Kullanılan İzin ve Ceza: Askerliği uzatır, şafağa (toplam güne) eklenir.
             const effectiveTotalDays = data.totalDays + usedLeave + penalty;
-
             if (passed > effectiveTotalDays) passed = effectiveTotalDays;
 
-            // Kalan şafak ve yüzdelik hesaplaması
             const remaining = effectiveTotalDays - passed;
             const percentage = (passed / effectiveTotalDays) * 100;
 
-            // Bitiş Tarihi
             const end = addDays(start, effectiveTotalDays - roadLeave);
 
             setStats({
@@ -75,19 +67,14 @@ export default function HomeScreen() {
     useEffect(() => {
         loadData();
 
-        // 24 saatlik dilimi hesaplayan fonksiyon
         const updateDayProgress = () => {
             const now = new Date();
-            // Gece 00:00'dan şu ana kadar geçen saniye
             const secondsSinceMidnight = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-            const totalSecondsInDay = 24 * 3600; // Bir gündeki toplam saniye
-
-            // Günün yüzde kaçının bittiğini hesapla
+            const totalSecondsInDay = 24 * 3600;
             setDayProgress((secondsSinceMidnight / totalSecondsInDay) * 100);
         };
 
-        updateDayProgress(); // İlk render'da çalıştır
-        // Çemberin canlı akması için her saniye (1000ms) güncelle
+        updateDayProgress();
         const timer = setInterval(updateDayProgress, 1000);
 
         return () => clearInterval(timer);
@@ -101,12 +88,17 @@ export default function HomeScreen() {
         );
     }
 
-    // GÖREV ALGORİTMASI: Kutuların kendi aralarındaki ilişki ve sıralı tamamlanma mantığı
+    // --- YENİ DİNAMİK GÖREV ALGORİTMASI ---
     const rawMilestones = [
         { id: 1, title: 'Acemilik Başladı', targetPassed: 1, icon: Footprints },
         { id: 2, title: 'Acemilik Bitiyor', targetPassed: 28, icon: ShieldCheck },
         { id: 3, title: '2. Ay Hoş Geldin', targetPassed: 30, icon: Star },
         { id: 4, title: '2. Ay Bitiyor', targetPassed: 60, icon: CheckCircle },
+
+        // Uzun dönem için özel görevler
+        { id: 91, title: '200\'ler Bitiyor', targetPassed: stats.totalDays - 200, icon: TrendingDown },
+        { id: 92, title: 'Yolun Yarısı', targetPassed: Math.floor(stats.totalDays / 2), icon: CheckCircle },
+
         { id: 5, title: 'Yüzler Bitiyor', targetPassed: stats.totalDays - 100, icon: TrendingDown },
         { id: 6, title: 'Çift Rakamlar', targetPassed: stats.totalDays - 99, icon: Layers },
         { id: 7, title: 'Plakalar', targetPassed: stats.totalDays - 81, icon: Map },
@@ -116,22 +108,40 @@ export default function HomeScreen() {
         { id: 11, title: 'Doğan Güneş', targetPassed: stats.totalDays, icon: Sunrise },
     ];
 
-    let prevTarget = 0;
-    const milestones = rawMilestones.map((m) => {
-        let currentTarget = Math.max(prevTarget, m.targetPassed);
-        currentTarget = Math.min(stats.totalDays, currentTarget);
+    // 1. Ayır: Bu askerlik türü için mantıklı/ulaşılabilir olanlar ve olmayanlar
+    const validMilestones = rawMilestones.filter(m => m.targetPassed > 0 && m.targetPassed <= stats.totalDays);
+    const lockedMilestones = rawMilestones.filter(m => m.targetPassed <= 0 || m.targetPassed > stats.totalDays);
 
+    // 2. Geçerli olanları KRONOLOJİK sıraya diz! (Örn: Bedellide Tek Rakamlar(19.gün) Acemilikten(28.gün) önce gelir)
+    validMilestones.sort((a, b) => a.targetPassed - b.targetPassed);
+
+    // 3. Geçerli görevlerin start ve end noktalarını sırayla hesapla
+    let prevTarget = 0;
+    const processedValidMilestones = validMilestones.map((m) => {
         const mInfo = {
             ...m,
+            isLocked: false,
             startAt: prevTarget,
-            endAt: currentTarget,
-            kalanSafak: Math.max(0, stats.totalDays - currentTarget)
+            endAt: m.targetPassed,
+            kalanSafak: Math.max(0, stats.totalDays - m.targetPassed)
         };
-        prevTarget = currentTarget;
+        prevTarget = m.targetPassed;
         return mInfo;
     });
 
-    // SVG Çember Ayarları
+    // 4. Ulaşılamayan (Kilitli) görevleri formatla
+    const processedLockedMilestones = lockedMilestones.map((m) => ({
+        ...m,
+        isLocked: true,
+        startAt: 0,
+        endAt: 0,
+        kalanSafak: 0
+    }));
+
+    // 5. Önce geçerliler, en sona kilitliler gelecek şekilde birleştir
+    const milestones = [...processedValidMilestones, ...processedLockedMilestones];
+
+    // SVG Ayarları
     const radius = 110;
     const strokeWidth = 14;
     const circumference = 2 * Math.PI * radius;
@@ -177,7 +187,6 @@ export default function HomeScreen() {
             <View className="items-center justify-center mb-10 mt-4">
                 <View className="relative items-center justify-center w-[250px] h-[250px]">
                     <Svg width="250" height="250" viewBox="0 0 250 250" className="absolute">
-                        {/* Arka Plan Çemberi */}
                         <Circle
                             cx="125"
                             cy="125"
@@ -186,7 +195,6 @@ export default function HomeScreen() {
                             strokeWidth={strokeWidth}
                             fill="transparent"
                         />
-                        {/* 24 Saate Göre Doldurulan Aktif Çember */}
                         <Circle
                             cx="125"
                             cy="125"
@@ -202,7 +210,6 @@ export default function HomeScreen() {
                         />
                     </Svg>
 
-                    {/* Çemberin İçindeki Yazılar */}
                     <View className="absolute items-center justify-center">
                         <Text className="text-gray-400 text-lg mb-1 font-medium">Kalan Gün</Text>
                         <Text className="text-safakPrimary text-7xl font-black">{stats.remaining}</Text>
@@ -213,6 +220,10 @@ export default function HomeScreen() {
                         )}
                     </View>
                 </View>
+
+                <Text className="text-gray-500 text-xs mt-4 font-medium uppercase tracking-widest">
+                    Günlük İlerleme: %{dayProgress.toFixed(1)}
+                </Text>
             </View>
 
             {/* İstatistik Kartları */}
@@ -239,6 +250,38 @@ export default function HomeScreen() {
                     contentContainerStyle={{ paddingRight: 48 }}
                 >
                     {milestones.map((m) => {
+                        // Kilitli (Muaf) görev tasarımı
+                        if (m.isLocked) {
+                            return (
+                                <View
+                                    key={`locked-${m.id}`}
+                                    className="w-36 p-4 rounded-2xl border mr-4 justify-between bg-safakSecondary border-gray-800 opacity-50"
+                                >
+                                    <View className="items-center mb-2">
+                                        <Lock size={28} color="#4b5563" />
+                                    </View>
+                                    <Text className="text-gray-500 font-bold text-center text-sm mb-1 h-10" numberOfLines={2}>
+                                        {m.title}
+                                    </Text>
+
+                                    <Text className="text-gray-600 text-[10px] text-center mb-2">
+                                        Görev Şafağı: <Text className="text-gray-500 font-bold">--</Text>
+                                    </Text>
+
+                                    <View className="mt-auto">
+                                        <Text className="text-[11px] text-center mb-2 font-medium text-gray-500">
+                                            Kilitli / Muaf
+                                        </Text>
+                                        <View className="h-1.5 bg-gray-800 rounded-full overflow-hidden" />
+                                        <Text className="text-[10px] text-right mt-1 font-bold text-gray-600">
+                                            %0
+                                        </Text>
+                                    </View>
+                                </View>
+                            );
+                        }
+
+                        // Normal (Geçerli) görev tasarımı
                         let mPercentage = 0;
                         let isCompleted = false;
                         let isActive = false;
@@ -248,6 +291,9 @@ export default function HomeScreen() {
                             if (stats.passed >= m.endAt) {
                                 isCompleted = true;
                                 mPercentage = 100;
+                            } else {
+                                mPercentage = 0;
+                                daysLeftForMission = m.endAt - stats.passed;
                             }
                         } else {
                             if (stats.passed >= m.endAt) {
