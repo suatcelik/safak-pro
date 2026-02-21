@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
-import { ShieldAlert, Sun, Moon, CalendarDays, MapPin, Map, FileWarning } from 'lucide-react-native';
+import {
+    ShieldAlert, Sun, CalendarDays, MapPin, Map,
+    Footprints, ShieldCheck, Star, CheckCircle,
+    TrendingDown, Layers, Clock, Target, Sunrise
+} from 'lucide-react-native';
 import { getUserSetup, SetupInfo } from '../utils/storage';
 import { differenceInDays, addDays, parseISO, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -8,7 +12,7 @@ import { tr } from 'date-fns/locale';
 export default function HomeScreen() {
     const [setup, setSetup] = useState<SetupInfo | null>(null);
     const [refreshing, setRefreshing] = useState(false);
-    const [stats, setStats] = useState({ passed: 0, remaining: 0, percentage: 0, targetDate: '' });
+    const [stats, setStats] = useState({ passed: 0, remaining: 0, percentage: 0, targetDate: '', totalDays: 0 });
 
     const loadData = async () => {
         const data = await getUserSetup();
@@ -23,24 +27,35 @@ export default function HomeScreen() {
             const start = parseISO(data.startDate);
             const today = new Date();
 
-            // Yol izni şafağı kısaltır (-), Ceza şafağı uzatır (+)
-            const extraDays = (data.penalty || 0) - (data.roadLeave || 0);
-            const effectiveTotalDays = data.totalDays + extraDays;
+            const roadLeave = data.roadLeave || 0;
+            const usedLeave = data.usedLeave || 0;
+            const penalty = data.penalty || 0;
 
-            const end = addDays(start, effectiveTotalDays);
+            // 1. Gerçekte geçen takvim günü
+            const realPassed = differenceInDays(today, start);
 
-            let passed = differenceInDays(today, start);
-            if (passed < 0) passed = 0; // Henüz başlamamış
-            if (passed > effectiveTotalDays) passed = effectiveTotalDays; // Bitmiş
+            // 2. Yol İzni: Askerlikten sayıldığı için "Geçen Gün"e eklenir, şafaktan düşer.
+            let passed = realPassed + roadLeave;
+            if (passed < 0) passed = 0;
 
+            // 3. Kullanılan İzin ve Ceza: Askerliği uzatır, şafağa (toplam güne) eklenir.
+            const effectiveTotalDays = data.totalDays + usedLeave + penalty;
+
+            if (passed > effectiveTotalDays) passed = effectiveTotalDays;
+
+            // 4. Kalan şafak ve yüzdelik hesaplaması
             const remaining = effectiveTotalDays - passed;
             const percentage = (passed / effectiveTotalDays) * 100;
+
+            // 5. Bitiş Tarihi: Başlangıç + (Toplam Gün + Ceza + İzin) - Yol İzni
+            const end = addDays(start, effectiveTotalDays - roadLeave);
 
             setStats({
                 passed,
                 remaining,
                 percentage: Math.min(percentage, 100),
-                targetDate: format(end, 'dd MMMM yyyy', { locale: tr })
+                targetDate: format(end, 'dd MMMM yyyy', { locale: tr }),
+                totalDays: effectiveTotalDays
             });
         } catch (e) {
             console.error("Home Stats error", e);
@@ -64,6 +79,37 @@ export default function HomeScreen() {
             </View>
         );
     }
+
+    // GÖREV ALGORİTMASI: Kutuların kendi aralarındaki ilişki ve sıralı tamamlanma mantığı
+    const rawMilestones = [
+        { id: 1, title: 'Acemilik Başladı', targetPassed: 1, icon: Footprints },
+        { id: 2, title: 'Acemilik Bitiyor', targetPassed: 28, icon: ShieldCheck },
+        { id: 3, title: '2. Ay Hoş Geldin', targetPassed: 30, icon: Star },
+        { id: 4, title: '2. Ay Bitiyor', targetPassed: 60, icon: CheckCircle },
+        { id: 5, title: 'Yüzler Bitiyor', targetPassed: stats.totalDays - 100, icon: TrendingDown },
+        { id: 6, title: 'Çift Rakamlar', targetPassed: stats.totalDays - 99, icon: Layers },
+        { id: 7, title: 'Plakalar', targetPassed: stats.totalDays - 81, icon: Map },
+        { id: 8, title: 'Son 2 Ay', targetPassed: stats.totalDays - 60, icon: CalendarDays },
+        { id: 9, title: 'Son 1 Ay', targetPassed: stats.totalDays - 30, icon: Clock },
+        { id: 10, title: 'Tek Rakamlar', targetPassed: stats.totalDays - 9, icon: Target },
+        { id: 11, title: 'Doğan Güneş', targetPassed: stats.totalDays, icon: Sunrise },
+    ];
+
+    // Görevlerin birbirine bağlı olarak ne zaman başlayıp bittiğini hesaplar
+    let prevTarget = 0;
+    const milestones = rawMilestones.map((m) => {
+        let currentTarget = Math.max(prevTarget, m.targetPassed);
+        currentTarget = Math.min(stats.totalDays, currentTarget);
+
+        const mInfo = {
+            ...m,
+            startAt: prevTarget,
+            endAt: currentTarget,
+            kalanSafak: Math.max(0, stats.totalDays - currentTarget) // "Kalan Şafak" baremi hesaplaması
+        };
+        prevTarget = currentTarget;
+        return mInfo;
+    });
 
     return (
         <ScrollView
@@ -126,18 +172,88 @@ export default function HomeScreen() {
                 </View>
             </View>
 
-            {/* İlerleme Çubuğu */}
-            <View className="bg-safakSecondary p-6 rounded-2xl border border-gray-700 mb-8">
-                <View className="flex-row justify-between mb-3">
-                    <Text className="text-white font-semibold">Tüm İlerleme</Text>
-                    <Text className="text-safakPrimary font-bold">{stats.percentage.toFixed(1)}%</Text>
-                </View>
-                <View className="h-4 bg-gray-800 rounded-full overflow-hidden">
-                    <View
-                        className="h-full bg-safakPrimary rounded-full"
-                        style={{ width: `${stats.percentage}%` }}
-                    />
-                </View>
+            {/* Görev Dönüm Noktaları - Yatay Liste */}
+            <View className="mb-8">
+                <Text className="text-white font-semibold text-lg mb-4">Şafak Görevleri</Text>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    className="-mx-6 px-6"
+                    contentContainerStyle={{ paddingRight: 48 }}
+                >
+                    {milestones.map((m) => {
+                        let mPercentage = 0;
+                        let isCompleted = false;
+                        let isActive = false;
+                        let daysLeftForMission = 0;
+
+                        if (m.endAt === m.startAt) {
+                            if (stats.passed >= m.endAt) {
+                                isCompleted = true;
+                                mPercentage = 100;
+                            }
+                        } else {
+                            if (stats.passed >= m.endAt) {
+                                isCompleted = true;
+                                mPercentage = 100;
+                            } else if (stats.passed < m.startAt) {
+                                mPercentage = 0;
+                                daysLeftForMission = m.endAt - m.startAt; // Daha başlamadıysa toplam görevi göster
+                            } else {
+                                isActive = true;
+                                mPercentage = ((stats.passed - m.startAt) / (m.endAt - m.startAt)) * 100;
+                                daysLeftForMission = m.endAt - stats.passed; // Aktif görev için kalan gün
+                            }
+                        }
+
+                        const remainingPercentage = Math.max(0, 100 - mPercentage);
+
+                        return (
+                            <View
+                                key={m.id}
+                                className={`w-36 p-4 rounded-2xl border mr-4 justify-between ${isCompleted ? 'bg-[#10b98115] border-[#10b98150]' : (isActive ? 'bg-safakSecondary border-safakPrimary shadow-sm shadow-safakPrimary/20' : 'bg-safakSecondary border-gray-700 opacity-80')
+                                    }`}
+                            >
+                                <View className="items-center mb-2">
+                                    <m.icon size={28} color={isCompleted ? '#10b981' : (isActive ? '#f43f5e' : '#6b7280')} />
+                                </View>
+                                <Text className="text-white font-bold text-center text-sm mb-1 h-10" numberOfLines={2}>
+                                    {m.title}
+                                </Text>
+
+                                {/* "Hedef Şafak" yerine "Kalan Şafak" eklendi */}
+                                <Text className="text-gray-400 text-[10px] text-center mb-2">
+                                    Görev Şafağı: <Text className="text-white font-bold">{m.kalanSafak}</Text>
+                                </Text>
+
+                                <View className="mt-auto">
+                                    {/* Aktif görevlerde X Gün Kaldı metni */}
+                                    <Text className={`text-[11px] text-center mb-2 font-medium ${isCompleted ? 'text-[#10b981]' : (isActive ? 'text-safakPrimary' : 'text-gray-400')}`}>
+                                        {isCompleted ? 'Görev Tamamlandı' : (isActive ? `${daysLeftForMission} Gün Kaldı` : 'Bekleniyor')}
+                                    </Text>
+
+                                    <View className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                                        <View
+                                            className={`h-full rounded-full ${isCompleted ? 'bg-[#10b981]' : 'bg-safakPrimary'}`}
+                                            style={{ width: `${mPercentage}%` }}
+                                        />
+                                    </View>
+
+                                    {!isCompleted && isActive && (
+                                        <Text className="text-[10px] text-right mt-1 font-bold text-safakPrimary">
+                                            %{remainingPercentage.toFixed(0)} Kaldı
+                                        </Text>
+                                    )}
+                                    {!isCompleted && !isActive && (
+                                        <Text className="text-[10px] text-right mt-1 font-bold text-gray-500">
+                                            %100 Kaldı
+                                        </Text>
+                                    )}
+                                </View>
+                            </View>
+                        );
+                    })}
+                </ScrollView>
             </View>
 
             {/* Ekstra Bilgiler (İzin & Ceza) */}
