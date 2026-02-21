@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import DateTimePicker from '@react-native-community/datetimepicker'; // Takvim paketi eklendi
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootStackParamList } from '../navigation/types';
 import { saveUserSetup, getUserSetup, SetupInfo } from '../utils/storage';
-import { useStore } from '../store/useStore'; // Zustand Store eklendi
-import { CalendarDays, Briefcase, CheckCircle, User, MapPin, Map, CarFront, ShieldAlert, Palmtree } from 'lucide-react-native';
+import { useStore } from '../store/useStore';
+import { CalendarDays, Briefcase, CheckCircle, User, MapPin, Map, CarFront, ShieldAlert, Palmtree, Search, X } from 'lucide-react-native';
+
+// YENİ: Şehir verilerini içe aktardık
+import { CITIES } from '../utils/cityData';
 
 type SetupNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Setup'>;
 
@@ -17,19 +20,20 @@ const MILITARY_TYPES = [
     { id: 'officer', label: 'Yedek Subay/Astay', days: 365 },
 ] as const;
 
+// Şehirleri alfabetik olarak sıralayıp diziye çeviriyoruz
+const CITIES_ARRAY = Object.values(CITIES)
+    .map(city => city.name)
+    .sort((a, b) => a.localeCompare(b, 'tr'));
+
 export default function SetupScreen() {
     const navigation = useNavigation<SetupNavigationProp>();
-
-    // Zustand'dan setSetup fonksiyonunu alıyoruz
     const setSetup = useStore((state) => state.setSetup);
 
-    // Form State'leri
     const [userName, setUserName] = useState('');
     const [hometown, setHometown] = useState('');
     const [militaryCity, setMilitaryCity] = useState('');
     const [selectedType, setSelectedType] = useState<typeof MILITARY_TYPES[number]['id']>('short');
 
-    // Takvim (Date Picker) State'leri
     const [date, setDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -38,7 +42,11 @@ export default function SetupScreen() {
     const [penalty, setPenalty] = useState('');
     const [roadLeave, setRoadLeave] = useState('');
 
-    // Sayfa açıldığında mevcut verileri yükle
+    // YENİ: Şehir seçici Modal için state'ler
+    const [isCityModalVisible, setCityModalVisible] = useState(false);
+    const [activeCityField, setActiveCityField] = useState<'hometown' | 'militaryCity' | null>(null);
+    const [citySearchText, setCitySearchText] = useState('');
+
     useEffect(() => {
         const loadInitialData = async () => {
             const existingData = await getUserSetup();
@@ -48,7 +56,6 @@ export default function SetupScreen() {
                 setMilitaryCity(existingData.militaryCity || '');
                 setSelectedType(existingData.militaryType);
 
-                // Tarih verilerini hem string hem de Date objesi olarak ayarla
                 setStartDate(existingData.startDate);
                 setDate(new Date(existingData.startDate));
 
@@ -60,20 +67,37 @@ export default function SetupScreen() {
         loadInitialData();
     }, []);
 
-    // Takvimden tarih seçildiğinde çalışacak fonksiyon
     const handleDateChange = (event: any, selectedDate?: Date) => {
-        // Android'de seçim yapıldıktan sonra takvimi kapatmak için
         if (Platform.OS === 'android') {
             setShowDatePicker(false);
         }
-
         if (selectedDate) {
             setDate(selectedDate);
-            // Seçilen tarihi YYYY-MM-DD formatına çevir
             const formattedDate = selectedDate.toISOString().split('T')[0];
             setStartDate(formattedDate);
         }
     };
+
+    // YENİ: Şehir Modal'ını açma ve seçme fonksiyonları
+    const openCityModal = (field: 'hometown' | 'militaryCity') => {
+        setActiveCityField(field);
+        setCitySearchText('');
+        setCityModalVisible(true);
+    };
+
+    const handleCitySelect = (cityName: string) => {
+        if (activeCityField === 'hometown') {
+            setHometown(cityName);
+        } else if (activeCityField === 'militaryCity') {
+            setMilitaryCity(cityName);
+        }
+        setCityModalVisible(false);
+    };
+
+    // Modal içindeki aramayı filtrelemek için
+    const filteredCities = CITIES_ARRAY.filter(city =>
+        city.toLocaleLowerCase('tr').includes(citySearchText.toLocaleLowerCase('tr'))
+    );
 
     const handleSave = async () => {
         const typeObj = MILITARY_TYPES.find(t => t.id === selectedType);
@@ -89,28 +113,20 @@ export default function SetupScreen() {
             startDate: startDate,
             totalDays: typeObj.days,
             userName: userName.trim() || 'Asker',
-            hometown: hometown.trim() || 'Belirtilmedi',
-            militaryCity: militaryCity.trim() || 'Belirtilmedi',
+            hometown: hometown || 'Belirtilmedi',
+            militaryCity: militaryCity || 'Belirtilmedi',
             usedLeave: parseInt(usedLeave) || 0,
             penalty: parseInt(penalty) || 0,
             roadLeave: parseInt(roadLeave) || 0,
         };
 
-        // 1. Cihaz hafızasına kaydet (AsyncStorage)
         await saveUserSetup(payload);
-
-        // 2. Zustand Store'a kaydet (Uygulama anında güncellensin)
         setSetup(payload);
-
-        // 3. Ana sayfaya yönlendir
         navigation.replace('MainTabs');
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            className="flex-1 bg-safakDark"
-        >
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-safakDark">
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24 }}>
                 <Text className="text-white text-3xl font-bold mt-12 mb-2">Askerlik Bilgilerin</Text>
                 <Text className="text-gray-400 text-base mb-8">
@@ -130,26 +146,28 @@ export default function SetupScreen() {
                             placeholderTextColor="#64748b"
                         />
                     </View>
-                    <View className="flex-row items-center bg-safakSecondary rounded-xl p-4 border border-gray-700">
-                        <MapPin size={24} color="#94a3b8" />
-                        <TextInput
-                            className="flex-1 ml-3 text-white text-lg font-medium outline-none"
-                            value={hometown}
-                            onChangeText={setHometown}
-                            placeholder="Memleketiniz"
-                            placeholderTextColor="#64748b"
-                        />
-                    </View>
-                    <View className="flex-row items-center bg-safakSecondary rounded-xl p-4 border border-gray-700">
-                        <Map size={24} color="#94a3b8" />
-                        <TextInput
-                            className="flex-1 ml-3 text-white text-lg font-medium outline-none"
-                            value={militaryCity}
-                            onChangeText={setMilitaryCity}
-                            placeholder="Askerlik Yapacağınız Şehir"
-                            placeholderTextColor="#64748b"
-                        />
-                    </View>
+
+                    {/* YENİ: Memleket Seçici */}
+                    <TouchableOpacity
+                        onPress={() => openCityModal('hometown')}
+                        className="flex-row items-center bg-safakSecondary rounded-xl p-4 border border-gray-700"
+                    >
+                        <MapPin size={24} color="#f43f5e" />
+                        <Text className={`flex-1 ml-3 text-lg font-medium ${hometown ? 'text-white' : 'text-[#64748b]'}`}>
+                            {hometown ? hometown : "Memleket Seçiniz"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    {/* YENİ: Askerlik Yapılacak Şehir Seçici */}
+                    <TouchableOpacity
+                        onPress={() => openCityModal('militaryCity')}
+                        className="flex-row items-center bg-safakSecondary rounded-xl p-4 border border-gray-700"
+                    >
+                        <Map size={24} color="#3b82f6" />
+                        <Text className={`flex-1 ml-3 text-lg font-medium ${militaryCity ? 'text-white' : 'text-[#64748b]'}`}>
+                            {militaryCity ? militaryCity : "Askerlik Yapılacak Şehir Seçiniz"}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Askerlik Türü */}
@@ -178,8 +196,6 @@ export default function SetupScreen() {
                 {/* Tarih ve İzinler */}
                 <Text className="text-gray-300 font-semibold mb-3 text-lg">Tarih ve İzinler</Text>
                 <View className="gap-y-4 mb-8">
-
-                    {/* YENİ: Takvim Seçici (Date Picker) Alanı */}
                     <TouchableOpacity
                         onPress={() => setShowDatePicker(true)}
                         className="flex-row items-center bg-safakSecondary rounded-xl p-4 border border-gray-700"
@@ -190,7 +206,6 @@ export default function SetupScreen() {
                         </Text>
                     </TouchableOpacity>
 
-                    {/* Takvim Bileşeni - Sadece showDatePicker true olduğunda görünür */}
                     {showDatePicker && (
                         <DateTimePicker
                             value={date}
@@ -248,6 +263,70 @@ export default function SetupScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+
+            {/* YENİ: Şehir Seçimi Modal (Açılır Pencere) */}
+            <Modal
+                visible={isCityModalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setCityModalVisible(false)}
+            >
+                <View className="flex-1 justify-end bg-black/60">
+                    <View className="bg-safakDark h-5/6 rounded-t-3xl border-t border-gray-700">
+
+                        {/* Modal Başlık ve Kapatma */}
+                        <View className="flex-row justify-between items-center p-6 border-b border-gray-800">
+                            <Text className="text-white text-xl font-bold">
+                                {activeCityField === 'hometown' ? 'Memleket Seç' : 'Birlik Şehri Seç'}
+                            </Text>
+                            <TouchableOpacity onPress={() => setCityModalVisible(false)} className="bg-safakSecondary p-2 rounded-full">
+                                <X size={20} color="#94a3b8" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Arama Çubuğu */}
+                        <View className="p-4">
+                            <View className="flex-row items-center bg-safakSecondary rounded-xl p-3 border border-gray-700">
+                                <Search size={20} color="#94a3b8" />
+                                <TextInput
+                                    className="flex-1 ml-3 text-white text-base outline-none"
+                                    placeholder="Şehir Ara..."
+                                    placeholderTextColor="#64748b"
+                                    value={citySearchText}
+                                    onChangeText={setCitySearchText}
+                                    autoCorrect={false}
+                                />
+                            </View>
+                        </View>
+
+                        {/* Şehir Listesi */}
+                        <FlatList
+                            data={filteredCities}
+                            keyExtractor={(item) => item}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 40 }}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    className="px-6 py-4 border-b border-gray-800 flex-row justify-between items-center"
+                                    onPress={() => handleCitySelect(item)}
+                                >
+                                    <Text className="text-gray-300 text-lg">{item}</Text>
+                                    {/* Eğer şu anki şehir seçiliyse yanına yeşil tik koy */}
+                                    {((activeCityField === 'hometown' && hometown === item) ||
+                                        (activeCityField === 'militaryCity' && militaryCity === item)) && (
+                                            <CheckCircle size={20} color="#10b981" />
+                                        )}
+                                </TouchableOpacity>
+                            )}
+                            ListEmptyComponent={
+                                <View className="p-6 items-center">
+                                    <Text className="text-gray-500">Şehir bulunamadı.</Text>
+                                </View>
+                            }
+                        />
+                    </View>
+                </View>
+            </Modal>
         </KeyboardAvoidingView>
     );
 }
