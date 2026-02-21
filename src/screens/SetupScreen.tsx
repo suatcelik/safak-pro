@@ -8,7 +8,6 @@ import { saveUserSetup, getUserSetup, SetupInfo } from '../utils/storage';
 import { useStore } from '../store/useStore';
 import { CalendarDays, Briefcase, CheckCircle, User, MapPin, Map, CarFront, ShieldAlert, Palmtree, Search, X } from 'lucide-react-native';
 
-// YENİ: Şehir verilerini içe aktardık
 import { CITIES } from '../utils/cityData';
 
 type SetupNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Setup'>;
@@ -20,7 +19,6 @@ const MILITARY_TYPES = [
     { id: 'officer', label: 'Yedek Subay/Astay', days: 365 },
 ] as const;
 
-// Şehirleri alfabetik olarak sıralayıp diziye çeviriyoruz
 const CITIES_ARRAY = Object.values(CITIES)
     .map(city => city.name)
     .sort((a, b) => a.localeCompare(b, 'tr'));
@@ -42,7 +40,6 @@ export default function SetupScreen() {
     const [penalty, setPenalty] = useState('');
     const [roadLeave, setRoadLeave] = useState('');
 
-    // YENİ: Şehir seçici Modal için state'ler
     const [isCityModalVisible, setCityModalVisible] = useState(false);
     const [activeCityField, setActiveCityField] = useState<'hometown' | 'militaryCity' | null>(null);
     const [citySearchText, setCitySearchText] = useState('');
@@ -78,7 +75,6 @@ export default function SetupScreen() {
         }
     };
 
-    // YENİ: Şehir Modal'ını açma ve seçme fonksiyonları
     const openCityModal = (field: 'hometown' | 'militaryCity') => {
         setActiveCityField(field);
         setCitySearchText('');
@@ -94,7 +90,6 @@ export default function SetupScreen() {
         setCityModalVisible(false);
     };
 
-    // Modal içindeki aramayı filtrelemek için
     const filteredCities = CITIES_ARRAY.filter(city =>
         city.toLocaleLowerCase('tr').includes(citySearchText.toLocaleLowerCase('tr'))
     );
@@ -103,18 +98,35 @@ export default function SetupScreen() {
         const typeObj = MILITARY_TYPES.find(t => t.id === selectedType);
         if (!typeObj) return;
 
-        if (!startDate) {
-            Alert.alert("Hata", "Lütfen sülüs tarihini (başlangıç) giriniz.");
+        // --- YENİ ZORUNLU ALAN KONTROLLERİ ---
+        if (!userName.trim()) {
+            Alert.alert("Eksik Bilgi", "Lütfen adınızı ve soyadınızı giriniz.");
             return;
         }
+
+        if (!hometown) {
+            Alert.alert("Eksik Bilgi", "Lütfen memleketinizi seçiniz.");
+            return;
+        }
+
+        if (!militaryCity) {
+            Alert.alert("Eksik Bilgi", "Lütfen askerlik yapacağınız şehri seçiniz.");
+            return;
+        }
+
+        if (!startDate) {
+            Alert.alert("Eksik Bilgi", "Lütfen sülüs tarihini (başlangıç) seçiniz.");
+            return;
+        }
+        // ------------------------------------
 
         const payload: SetupInfo = {
             militaryType: selectedType,
             startDate: startDate,
             totalDays: typeObj.days,
-            userName: userName.trim() || 'Asker',
-            hometown: hometown || 'Belirtilmedi',
-            militaryCity: militaryCity || 'Belirtilmedi',
+            userName: userName.trim(),
+            hometown: hometown,
+            militaryCity: militaryCity,
             usedLeave: parseInt(usedLeave) || 0,
             penalty: parseInt(penalty) || 0,
             roadLeave: parseInt(roadLeave) || 0,
@@ -147,7 +159,6 @@ export default function SetupScreen() {
                         />
                     </View>
 
-                    {/* YENİ: Memleket Seçici */}
                     <TouchableOpacity
                         onPress={() => openCityModal('hometown')}
                         className="flex-row items-center bg-safakSecondary rounded-xl p-4 border border-gray-700"
@@ -158,7 +169,6 @@ export default function SetupScreen() {
                         </Text>
                     </TouchableOpacity>
 
-                    {/* YENİ: Askerlik Yapılacak Şehir Seçici */}
                     <TouchableOpacity
                         onPress={() => openCityModal('militaryCity')}
                         className="flex-row items-center bg-safakSecondary rounded-xl p-4 border border-gray-700"
@@ -214,6 +224,7 @@ export default function SetupScreen() {
                             onChange={handleDateChange}
                             maximumDate={new Date(2030, 0, 1)}
                             minimumDate={new Date(2020, 0, 1)}
+                            locale="tr-TR"
                         />
                     )}
 
@@ -264,7 +275,7 @@ export default function SetupScreen() {
                 </View>
             </ScrollView>
 
-            {/* YENİ: Şehir Seçimi Modal (Açılır Pencere) */}
+            {/* Şehir Seçimi Modal (Açılır Pencere) */}
             <Modal
                 visible={isCityModalVisible}
                 animationType="slide"
@@ -274,7 +285,6 @@ export default function SetupScreen() {
                 <View className="flex-1 justify-end bg-black/60">
                     <View className="bg-safakDark h-5/6 rounded-t-3xl border-t border-gray-700">
 
-                        {/* Modal Başlık ve Kapatma */}
                         <View className="flex-row justify-between items-center p-6 border-b border-gray-800">
                             <Text className="text-white text-xl font-bold">
                                 {activeCityField === 'hometown' ? 'Memleket Seç' : 'Birlik Şehri Seç'}
@@ -284,7 +294,6 @@ export default function SetupScreen() {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Arama Çubuğu */}
                         <View className="p-4">
                             <View className="flex-row items-center bg-safakSecondary rounded-xl p-3 border border-gray-700">
                                 <Search size={20} color="#94a3b8" />
@@ -299,7 +308,6 @@ export default function SetupScreen() {
                             </View>
                         </View>
 
-                        {/* Şehir Listesi */}
                         <FlatList
                             data={filteredCities}
                             keyExtractor={(item) => item}
@@ -311,7 +319,6 @@ export default function SetupScreen() {
                                     onPress={() => handleCitySelect(item)}
                                 >
                                     <Text className="text-gray-300 text-lg">{item}</Text>
-                                    {/* Eğer şu anki şehir seçiliyse yanına yeşil tik koy */}
                                     {((activeCityField === 'hometown' && hometown === item) ||
                                         (activeCityField === 'militaryCity' && militaryCity === item)) && (
                                             <CheckCircle size={20} color="#10b981" />
