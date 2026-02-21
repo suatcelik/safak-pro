@@ -5,6 +5,7 @@ import {
     Footprints, ShieldCheck, Star, CheckCircle,
     TrendingDown, Layers, Clock, Target, Sunrise
 } from 'lucide-react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { getUserSetup, SetupInfo } from '../utils/storage';
 import { differenceInDays, addDays, parseISO, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -13,6 +14,9 @@ export default function HomeScreen() {
     const [setup, setSetup] = useState<SetupInfo | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [stats, setStats] = useState({ passed: 0, remaining: 0, percentage: 0, targetDate: '', totalDays: 0 });
+
+    // 24 saatlik gün ilerlemesi için state
+    const [dayProgress, setDayProgress] = useState(0);
 
     const loadData = async () => {
         const data = await getUserSetup();
@@ -31,23 +35,23 @@ export default function HomeScreen() {
             const usedLeave = data.usedLeave || 0;
             const penalty = data.penalty || 0;
 
-            // 1. Gerçekte geçen takvim günü
+            // Gerçekte geçen takvim günü
             const realPassed = differenceInDays(today, start);
 
-            // 2. Yol İzni: Askerlikten sayıldığı için "Geçen Gün"e eklenir, şafaktan düşer.
+            // Yol İzni: Askerlikten sayıldığı için "Geçen Gün"e eklenir, şafaktan düşer.
             let passed = realPassed + roadLeave;
             if (passed < 0) passed = 0;
 
-            // 3. Kullanılan İzin ve Ceza: Askerliği uzatır, şafağa (toplam güne) eklenir.
+            // Kullanılan İzin ve Ceza: Askerliği uzatır, şafağa (toplam güne) eklenir.
             const effectiveTotalDays = data.totalDays + usedLeave + penalty;
 
             if (passed > effectiveTotalDays) passed = effectiveTotalDays;
 
-            // 4. Kalan şafak ve yüzdelik hesaplaması
+            // Kalan şafak ve yüzdelik hesaplaması
             const remaining = effectiveTotalDays - passed;
             const percentage = (passed / effectiveTotalDays) * 100;
 
-            // 5. Bitiş Tarihi: Başlangıç + (Toplam Gün + Ceza + İzin) - Yol İzni
+            // Bitiş Tarihi
             const end = addDays(start, effectiveTotalDays - roadLeave);
 
             setStats({
@@ -70,6 +74,23 @@ export default function HomeScreen() {
 
     useEffect(() => {
         loadData();
+
+        // 24 saatlik dilimi hesaplayan fonksiyon
+        const updateDayProgress = () => {
+            const now = new Date();
+            // Gece 00:00'dan şu ana kadar geçen saniye
+            const secondsSinceMidnight = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+            const totalSecondsInDay = 24 * 3600; // Bir gündeki toplam saniye
+
+            // Günün yüzde kaçının bittiğini hesapla
+            setDayProgress((secondsSinceMidnight / totalSecondsInDay) * 100);
+        };
+
+        updateDayProgress(); // İlk render'da çalıştır
+        // Çemberin canlı akması için her saniye (1000ms) güncelle
+        const timer = setInterval(updateDayProgress, 1000);
+
+        return () => clearInterval(timer);
     }, []);
 
     if (!setup) {
@@ -95,7 +116,6 @@ export default function HomeScreen() {
         { id: 11, title: 'Doğan Güneş', targetPassed: stats.totalDays, icon: Sunrise },
     ];
 
-    // Görevlerin birbirine bağlı olarak ne zaman başlayıp bittiğini hesaplar
     let prevTarget = 0;
     const milestones = rawMilestones.map((m) => {
         let currentTarget = Math.max(prevTarget, m.targetPassed);
@@ -105,11 +125,17 @@ export default function HomeScreen() {
             ...m,
             startAt: prevTarget,
             endAt: currentTarget,
-            kalanSafak: Math.max(0, stats.totalDays - currentTarget) // "Kalan Şafak" baremi hesaplaması
+            kalanSafak: Math.max(0, stats.totalDays - currentTarget)
         };
         prevTarget = currentTarget;
         return mInfo;
     });
+
+    // SVG Çember Ayarları
+    const radius = 110;
+    const strokeWidth = 14;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (dayProgress / 100) * circumference;
 
     return (
         <ScrollView
@@ -147,15 +173,46 @@ export default function HomeScreen() {
                 </View>
             </View>
 
-            {/* Ana Çember Gösterge */}
-            <View className="items-center justify-center py-10 bg-safakSecondary rounded-3xl shadow-xl mb-8 border border-gray-700">
-                <Text className="text-gray-400 text-lg mb-2 font-medium">Kalan Gün</Text>
-                <Text className="text-safakPrimary text-8xl font-black mb-1">{stats.remaining}</Text>
-                {stats.remaining === 0 ? (
-                    <Text className="text-emerald-400 text-xl font-bold mt-2">Hürgeneral! 🎖️</Text>
-                ) : (
-                    <Text className="text-gray-300 text-base mt-2">vatan borcu biter...</Text>
-                )}
+            {/* Ana Çember Gösterge (24 Saatlik Sayaçlı) */}
+            <View className="items-center justify-center mb-10 mt-4">
+                <View className="relative items-center justify-center w-[250px] h-[250px]">
+                    <Svg width="250" height="250" viewBox="0 0 250 250" className="absolute">
+                        {/* Arka Plan Çemberi */}
+                        <Circle
+                            cx="125"
+                            cy="125"
+                            r={radius}
+                            stroke="#374151"
+                            strokeWidth={strokeWidth}
+                            fill="transparent"
+                        />
+                        {/* 24 Saate Göre Doldurulan Aktif Çember */}
+                        <Circle
+                            cx="125"
+                            cy="125"
+                            r={radius}
+                            stroke="#10b981"
+                            strokeWidth={strokeWidth}
+                            fill="transparent"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeDashoffset}
+                            strokeLinecap="round"
+                            rotation="-90"
+                            origin="125, 125"
+                        />
+                    </Svg>
+
+                    {/* Çemberin İçindeki Yazılar */}
+                    <View className="absolute items-center justify-center">
+                        <Text className="text-gray-400 text-lg mb-1 font-medium">Kalan Gün</Text>
+                        <Text className="text-safakPrimary text-7xl font-black">{stats.remaining}</Text>
+                        {stats.remaining === 0 ? (
+                            <Text className="text-emerald-400 text-xl font-bold mt-2">Hürgeneral! 🎖️</Text>
+                        ) : (
+                            <Text className="text-gray-300 text-sm mt-1">vatan borcu biter...</Text>
+                        )}
+                    </View>
+                </View>
             </View>
 
             {/* İstatistik Kartları */}
@@ -198,11 +255,11 @@ export default function HomeScreen() {
                                 mPercentage = 100;
                             } else if (stats.passed < m.startAt) {
                                 mPercentage = 0;
-                                daysLeftForMission = m.endAt - m.startAt; // Daha başlamadıysa toplam görevi göster
+                                daysLeftForMission = m.endAt - m.startAt;
                             } else {
                                 isActive = true;
                                 mPercentage = ((stats.passed - m.startAt) / (m.endAt - m.startAt)) * 100;
-                                daysLeftForMission = m.endAt - stats.passed; // Aktif görev için kalan gün
+                                daysLeftForMission = m.endAt - stats.passed;
                             }
                         }
 
@@ -221,13 +278,11 @@ export default function HomeScreen() {
                                     {m.title}
                                 </Text>
 
-                                {/* "Hedef Şafak" yerine "Kalan Şafak" eklendi */}
                                 <Text className="text-gray-400 text-[10px] text-center mb-2">
                                     Görev Şafağı: <Text className="text-white font-bold">{m.kalanSafak}</Text>
                                 </Text>
 
                                 <View className="mt-auto">
-                                    {/* Aktif görevlerde X Gün Kaldı metni */}
                                     <Text className={`text-[11px] text-center mb-2 font-medium ${isCompleted ? 'text-[#10b981]' : (isActive ? 'text-safakPrimary' : 'text-gray-400')}`}>
                                         {isCompleted ? 'Görev Tamamlandı' : (isActive ? `${daysLeftForMission} Gün Kaldı` : 'Bekleniyor')}
                                     </Text>
