@@ -11,6 +11,9 @@ import { useStore } from '../store/useStore'; // YENİ: Zustand Store eklendi
 import { differenceInDays, addDays, parseISO, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
+import { Quote } from 'lucide-react-native';
+import { getRandomQuote } from '../utils/quotes';
+
 // --- Sadece bu bileşen saniyede bir render edilecek ---
 const DailyProgressCircle = ({ remaining }: { remaining: number }) => {
     const [dayProgress, setDayProgress] = useState(0);
@@ -72,6 +75,12 @@ export default function HomeScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [stats, setStats] = useState({ passed: 0, remaining: 0, percentage: 0, targetDate: '', totalDays: 0 });
+
+    const [quote, setQuote] = useState('');
+
+    useEffect(() => {
+        setQuote(getRandomQuote());
+    }, []);
 
     const loadData = async () => {
         try {
@@ -255,6 +264,34 @@ export default function HomeScreen() {
                 </View>
             </View>
 
+            {/* Ekstra Bilgiler */}
+            <View className="bg-safakSecondary p-5 rounded-2xl border border-gray-700 flex-row justify-between mb-8">
+                <View className="items-center flex-1 border-r border-gray-700">
+                    <Text className="text-gray-400 text-xs mb-1">Yol İzni</Text>
+                    <Text className="text-white font-bold">{setup.roadLeave || 0} Gün</Text>
+                </View>
+                <View className="items-center flex-1 border-r border-gray-700">
+                    <Text className="text-gray-400 text-xs mb-1">Kullanılan İzin</Text>
+                    <Text className="text-white font-bold">{setup.usedLeave || 0} Gün</Text>
+                </View>
+                <View className="items-center flex-1">
+                    <Text className="text-gray-400 text-xs mb-1">Ceza</Text>
+                    <Text className="text-red-400 font-bold">{setup.penalty || 0} Gün</Text>
+                </View>
+            </View>
+
+            <View className="bg-safakSecondary/50 p-5 rounded-2xl border border-safakPrimary/20 mb-6 flex-row items-start">
+                <Quote size={20} color="#10b981" className="mr-3 mt-1" />
+                <View className="flex-1">
+                    <Text className="text-gray-400 text-xs font-bold uppercase tracking-tighter mb-1">
+                        Günün Sözü
+                    </Text>
+                    <Text className="text-white italic text-base leading-6">
+                        "{quote}"
+                    </Text>
+                </View>
+            </View>
+
             {/* Görev Dönüm Noktaları - Yatay Liste */}
             <View className="mb-8">
                 <Text className="text-white font-semibold text-lg mb-4">Şafak Görevleri</Text>
@@ -318,21 +355,7 @@ export default function HomeScreen() {
                 </ScrollView>
             </View>
 
-            {/* Ekstra Bilgiler */}
-            <View className="bg-safakSecondary p-5 rounded-2xl border border-gray-700 flex-row justify-between">
-                <View className="items-center flex-1 border-r border-gray-700">
-                    <Text className="text-gray-400 text-xs mb-1">Yol İzni</Text>
-                    <Text className="text-white font-bold">{setup.roadLeave || 0} Gün</Text>
-                </View>
-                <View className="items-center flex-1 border-r border-gray-700">
-                    <Text className="text-gray-400 text-xs mb-1">Kullanılan İzin</Text>
-                    <Text className="text-white font-bold">{setup.usedLeave || 0} Gün</Text>
-                </View>
-                <View className="items-center flex-1">
-                    <Text className="text-gray-400 text-xs mb-1">Ceza</Text>
-                    <Text className="text-red-400 font-bold">{setup.penalty || 0} Gün</Text>
-                </View>
-            </View>
+
         </ScrollView>
     );
 }
