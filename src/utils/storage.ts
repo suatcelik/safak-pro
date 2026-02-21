@@ -2,15 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const IS_FIRST_LAUNCH_KEY = 'isFirstLaunch';
 export const USER_SETUP_KEY = 'userSetupInfo';
-
-// Boyanan günleri tutmak için yeni bir anahtar
 export const PAINTED_DAYS_KEY = 'paintedDaysInfo';
+export const LAST_COLOR_KEY = 'lastSelectedColor'; // Kullanıcının paletten en son seçtiği rengi hatırlamak için
 
 export interface SetupInfo {
     militaryType: 'short' | 'long' | 'paid' | 'officer';
     startDate: string;
     totalDays: number;
-    // Yeni eklenen alanlar
     userName?: string;
     hometown?: string;
     militaryCity?: string;
@@ -18,6 +16,9 @@ export interface SetupInfo {
     penalty?: number;
     roadLeave?: number;
 }
+
+// Gün numarası ve o güne ait renk bilgisini tutan yapı
+export type PaintedDaysMap = { [day: number]: string };
 
 export const setFirstLaunch = async (isFirst: boolean) => {
     try {
@@ -30,12 +31,8 @@ export const setFirstLaunch = async (isFirst: boolean) => {
 export const getFirstLaunch = async (): Promise<boolean> => {
     try {
         const value = await AsyncStorage.getItem(IS_FIRST_LAUNCH_KEY);
-        if (value === null) {
-            return true;
-        }
-        return JSON.parse(value);
+        return value === null ? true : JSON.parse(value);
     } catch (e) {
-        console.error("Error getting first launch status", e);
         return true;
     }
 };
@@ -53,7 +50,6 @@ export const getUserSetup = async (): Promise<SetupInfo | null> => {
         const value = await AsyncStorage.getItem(USER_SETUP_KEY);
         return value ? JSON.parse(value) : null;
     } catch (e) {
-        console.error("Error fetching user setup", e);
         return null;
     }
 };
@@ -66,35 +62,75 @@ export const clearAllData = async () => {
     }
 };
 
-// Boyanan günleri getir
-export const getPaintedDays = async (): Promise<number[]> => {
+// Boyanan günleri objeler halinde getir
+export const getPaintedDays = async (): Promise<PaintedDaysMap> => {
     try {
         const value = await AsyncStorage.getItem(PAINTED_DAYS_KEY);
-        return value ? JSON.parse(value) : [];
+        if (value) {
+            const parsed = JSON.parse(value);
+            // EĞER ESKİ SİSTEMDE ARRAY OLARAK KAYDEDİLMİŞSE, YENİ SİSTEME DÖNÜŞTÜR (Çökmeyi önler)
+            if (Array.isArray(parsed)) {
+                const newFormat: PaintedDaysMap = {};
+                parsed.forEach(day => {
+                    newFormat[day] = '#10b981'; // Eski boyamaları varsayılan yeşile çevir
+                });
+                await AsyncStorage.setItem(PAINTED_DAYS_KEY, JSON.stringify(newFormat));
+                return newFormat;
+            }
+            return parsed;
+        }
+        return {};
     } catch (e) {
         console.error("Error fetching painted days", e);
-        return [];
+        return {};
     }
 };
 
-// Bir günü boya veya boyayı kaldır
-export const togglePaintedDay = async (dayNumber: number): Promise<number[]> => {
+// Bir günü belirtilen renge boya veya boyayı kaldır
+export const togglePaintedDay = async (dayNumber: number, color: string): Promise<PaintedDaysMap> => {
     try {
         const currentDays = await getPaintedDays();
-        let updatedDays;
+        const updatedDays = { ...currentDays };
 
-        if (currentDays.includes(dayNumber)) {
-            // Zaten boyalıysa boyayı kaldır
-            updatedDays = currentDays.filter(d => d !== dayNumber);
+        if (updatedDays[dayNumber] === color) {
+            // Eğer kutu zaten SEÇİLİ RENK ile aynıysa, boyayı tamamen sil (Kutuyu boşalt)
+            delete updatedDays[dayNumber];
         } else {
-            // Boyalı değilse listeye ekle
-            updatedDays = [...currentDays, dayNumber];
+            // Kutu boşsa veya FARKLI BİR RENKTEYSE, yeni seçilen renge boya
+            updatedDays[dayNumber] = color;
         }
 
         await AsyncStorage.setItem(PAINTED_DAYS_KEY, JSON.stringify(updatedDays));
         return updatedDays;
     } catch (e) {
         console.error("Error toggling painted day", e);
-        return [];
+        return {};
+    }
+};
+
+// Kullanıcının fırçada bıraktığı son rengi kaydet
+export const saveLastColor = async (color: string) => {
+    try {
+        await AsyncStorage.setItem(LAST_COLOR_KEY, color);
+    } catch (e) {
+        console.error("Error saving last color", e);
+    }
+};
+
+// Kaydedilen son fırça rengini getir
+export const getLastColor = async (): Promise<string> => {
+    try {
+        const value = await AsyncStorage.getItem(LAST_COLOR_KEY);
+        return value || '#10b981';
+    } catch (e) {
+        return '#10b981';
+    }
+};
+// Boyanan günleri tamamen sıfırla (Askerlik tipi değiştiğinde kullanılır)
+export const clearPaintedDays = async () => {
+    try {
+        await AsyncStorage.setItem(PAINTED_DAYS_KEY, JSON.stringify({}));
+    } catch (e) {
+        console.error("Error clearing painted days", e);
     }
 };

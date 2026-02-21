@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootStackParamList } from '../navigation/types';
-import { saveUserSetup, getUserSetup, SetupInfo } from '../utils/storage';
+import { saveUserSetup, getUserSetup, SetupInfo, clearPaintedDays } from '../utils/storage'; // <-- clearPaintedDays eklendi
 import { useStore } from '../store/useStore';
 import { CalendarDays, Briefcase, CheckCircle, User, MapPin, Map, CarFront, ShieldAlert, Palmtree, Search, X } from 'lucide-react-native';
 
@@ -16,7 +16,6 @@ const MILITARY_TYPES = [
     { id: 'short', label: 'Kısa Dönem (6 Ay)', days: 180 },
     { id: 'long', label: 'Uzun Dönem (12 Ay)', days: 365 },
     { id: 'paid', label: 'Bedelli Askerlik', days: 28 },
-    { id: 'officer', label: 'Yedek Subay/Astay', days: 365 },
 ] as const;
 
 const CITIES_ARRAY = Object.values(CITIES)
@@ -51,7 +50,7 @@ export default function SetupScreen() {
                 setUserName(existingData.userName || '');
                 setHometown(existingData.hometown || '');
                 setMilitaryCity(existingData.militaryCity || '');
-                setSelectedType(existingData.militaryType);
+
 
                 setStartDate(existingData.startDate);
                 setDate(new Date(existingData.startDate));
@@ -119,6 +118,13 @@ export default function SetupScreen() {
             return;
         }
         // ------------------------------------
+
+        // --- EKLENEN KISIM: Askerlik türü değiştiyse eski boyamaları temizle ---
+        const existingData = await getUserSetup();
+        if (existingData && existingData.militaryType !== selectedType) {
+            await clearPaintedDays();
+        }
+        // -----------------------------------------------------------------------
 
         const payload: SetupInfo = {
             militaryType: selectedType,
