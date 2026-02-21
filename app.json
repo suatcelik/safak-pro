@@ -29,6 +29,12 @@
     },
     "plugins": [
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c28ab7e6-b8b0-45dd-aea0-4b3f953b4d92"
+      }
+    },
+    "owner": "tabugoapp"
   }
 }
