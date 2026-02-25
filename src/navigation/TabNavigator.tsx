@@ -44,6 +44,7 @@ export default function TabNavigator() {
                     tabBarIcon: ({ color, size }) => (
                         <CalendarDays color={color} size={size} />
                     ),
+                    tabBarStyle: { display: 'none' }
                 }}
             />
 
