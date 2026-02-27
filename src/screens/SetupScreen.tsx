@@ -4,11 +4,11 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootStackParamList } from '../navigation/types';
-import { saveUserSetup, getUserSetup, SetupInfo, clearPaintedDays } from '../utils/storage'; // <-- clearPaintedDays eklendi
+import { saveUserSetup, getUserSetup, SetupInfo, clearPaintedDays } from '../utils/storage';
 import { useStore } from '../store/useStore';
 import { CalendarDays, Briefcase, CheckCircle, User, MapPin, Map, CarFront, ShieldAlert, Palmtree, Search, X } from 'lucide-react-native';
-
 import { CITIES } from '../utils/cityData';
+import { setupAllNotifications } from '../utils/notifications'; // <-- Bildirimler için eklendi
 
 type SetupNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Setup'>;
 
@@ -50,11 +50,8 @@ export default function SetupScreen() {
                 setUserName(existingData.userName || '');
                 setHometown(existingData.hometown || '');
                 setMilitaryCity(existingData.militaryCity || '');
-
-
                 setStartDate(existingData.startDate);
                 setDate(new Date(existingData.startDate));
-
                 setUsedLeave(existingData.usedLeave?.toString() || '');
                 setPenalty(existingData.penalty?.toString() || '');
                 setRoadLeave(existingData.roadLeave?.toString() || '');
@@ -97,7 +94,6 @@ export default function SetupScreen() {
         const typeObj = MILITARY_TYPES.find(t => t.id === selectedType);
         if (!typeObj) return;
 
-        // --- YENİ ZORUNLU ALAN KONTROLLERİ ---
         if (!userName.trim()) {
             Alert.alert("Eksik Bilgi", "Lütfen adınızı ve soyadınızı giriniz.");
             return;
@@ -117,14 +113,11 @@ export default function SetupScreen() {
             Alert.alert("Eksik Bilgi", "Lütfen sülüs tarihini (başlangıç) seçiniz.");
             return;
         }
-        // ------------------------------------
 
-        // --- EKLENEN KISIM: Askerlik türü değiştiyse eski boyamaları temizle ---
         const existingData = await getUserSetup();
         if (existingData && existingData.militaryType !== selectedType) {
             await clearPaintedDays();
         }
-        // -----------------------------------------------------------------------
 
         const payload: SetupInfo = {
             militaryType: selectedType,
@@ -140,6 +133,10 @@ export default function SetupScreen() {
 
         await saveUserSetup(payload);
         setSetup(payload);
+
+        // --- BİLDİRİMLERİ KUR (Yeni Eklenen Kısım) ---
+        await setupAllNotifications(payload);
+
         navigation.replace('MainTabs');
     };
 
@@ -151,7 +148,6 @@ export default function SetupScreen() {
                     Uygulamayı kişiselleştirmek ve doğru hesaplama yapmak için bilgileri doldurun.
                 </Text>
 
-                {/* Kişisel Bilgiler */}
                 <Text className="text-gray-300 font-semibold mb-3 text-lg">Kişisel Bilgiler</Text>
                 <View className="gap-y-4 mb-8">
                     <View className="flex-row items-center bg-safakSecondary rounded-xl p-4 border border-gray-700">
@@ -186,7 +182,6 @@ export default function SetupScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {/* Askerlik Türü */}
                 <Text className="text-gray-300 font-semibold mb-3 text-lg">Askerlik Türü</Text>
                 <View className="gap-y-3 mb-8">
                     {MILITARY_TYPES.map((item) => {
@@ -209,7 +204,6 @@ export default function SetupScreen() {
                     })}
                 </View>
 
-                {/* Tarih ve İzinler */}
                 <Text className="text-gray-300 font-semibold mb-3 text-lg">Tarih ve İzinler</Text>
                 <View className="gap-y-4 mb-8">
                     <TouchableOpacity
@@ -276,12 +270,11 @@ export default function SetupScreen() {
                         className="bg-safakPrimary w-full py-4 rounded-xl shadow-lg flex-row justify-center items-center"
                         onPress={handleSave}
                     >
-                        <Text className="text-safakDark font-bold text-xl mr-2">Bilgileri Güncelle</Text>
+                        <Text className="text-safakDark font-bold text-xl mr-2">Bilgileri Kaydet</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
 
-            {/* Şehir Seçimi Modal (Açılır Pencere) */}
             <Modal
                 visible={isCityModalVisible}
                 animationType="slide"
@@ -290,7 +283,6 @@ export default function SetupScreen() {
             >
                 <View className="flex-1 justify-end bg-black/60">
                     <View className="bg-safakDark h-5/6 rounded-t-3xl border-t border-gray-700">
-
                         <View className="flex-row justify-between items-center p-6 border-b border-gray-800">
                             <Text className="text-white text-xl font-bold">
                                 {activeCityField === 'hometown' ? 'Memleket Seç' : 'Birlik Şehri Seç'}
