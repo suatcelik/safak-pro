@@ -35,8 +35,7 @@
           "icon": "./assets/icon.png",
           "color": "#10b981"
         }
-      ],
-      "react-native-google-mobile-ads"
+      ]
     ],
     "extra": {
       "eas": {
