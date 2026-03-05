@@ -1,12 +1,15 @@
+import { NavigatorScreenParams } from '@react-navigation/native';
+
+export type MainTabParamList = {
+    Home: undefined;
+    Calendar: undefined;
+    Settings: undefined;
+};
+
 export type RootStackParamList = {
     Splash: undefined;
     Onboarding: undefined;
     Setup: undefined;
-    MainTabs: undefined;
-};
-
-export type MainTabParamList = {
-    Home: undefined;
-    Settings: undefined;
-    Calendar: undefined; // Takvim için eklendi
+    MainTabs: NavigatorScreenParams<MainTabParamList>;
+    Premium: undefined; // <-- Bunu yeni ekledik
 };
