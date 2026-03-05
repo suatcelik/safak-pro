@@ -52,7 +52,8 @@
         {
           "userTrackingPermission": "Uygulamanın ücretsiz kalabilmesi için size daha uygun reklamlar göstermemize izin verir misiniz?"
         }
-      ]
+      ],
+      "react-native-iap"
     ],
     "extra": {
       "eas": {
