@@ -3,10 +3,13 @@ export type RootStackParamList = {
     Onboarding: undefined;
     Setup: undefined;
     MainTabs: undefined;
+
+    // ✅ EKLENDİ
+    Premium: undefined;
 };
 
 export type MainTabParamList = {
     Home: undefined;
     Settings: undefined;
-    Calendar: undefined; // Takvim için eklendi
+    Calendar: undefined;
 };

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import {
     ShieldAlert, Sun, CalendarDays, MapPin, Map,
     Footprints, ShieldCheck, Star, CheckCircle,
@@ -12,17 +12,17 @@ import { useStore } from '../store/useStore';
 import { differenceInDays, addDays, parseISO, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { getRandomQuote } from '../utils/quotes';
-import { CITY_PLATES } from '../utils/cityPlates'; // Sizin oluşturduğunuz yeni dosya
+import { CITY_PLATES } from '../utils/cityPlates';
+
+// ✅ EKLENDİ: Banner component
+import AdBanner from '../components/AdBanner';
 
 // --- Sadece bu bileşen saniyede bir render edilecek ---
 const DailyProgressCircle = ({ remaining }: { remaining: number }) => {
     const [dayProgress, setDayProgress] = useState(0);
 
-    // Kalan gün 81-1 arasındaysa plaka ismini bul
     const cityName = useMemo(() => {
         if (remaining <= 81 && remaining > 0) {
-            // cityPlates içindeki key'ler sayı ise doğrudan erişir, 
-            // değilse Number(remaining) ile garantiye alır.
             return CITY_PLATES[remaining] || null;
         }
         return null;
@@ -38,7 +38,6 @@ const DailyProgressCircle = ({ remaining }: { remaining: number }) => {
 
         updateDayProgress();
         const timer = setInterval(updateDayProgress, 1000);
-
         return () => clearInterval(timer);
     }, []);
 
@@ -53,9 +52,16 @@ const DailyProgressCircle = ({ remaining }: { remaining: number }) => {
                 <Svg width="250" height="250" viewBox="0 0 250 250" className="absolute">
                     <Circle cx="125" cy="125" r={radius} stroke="#374151" strokeWidth={strokeWidth} fill="transparent" />
                     <Circle
-                        cx="125" cy="125" r={radius} stroke="#10b981" strokeWidth={strokeWidth}
-                        fill="transparent" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
-                        strokeLinecap="round" rotation="-90" origin="125, 125"
+                        cx="125" cy="125"
+                        r={radius}
+                        stroke="#10b981"
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={strokeDashoffset}
+                        strokeLinecap="round"
+                        rotation="-90"
+                        origin="125, 125"
                     />
                 </Svg>
 
@@ -63,7 +69,6 @@ const DailyProgressCircle = ({ remaining }: { remaining: number }) => {
                     <Text className="text-gray-400 text-lg mb-1 font-medium">Kalan Gün</Text>
                     <Text className="text-safakPrimary text-7xl font-black">{remaining}</Text>
 
-                    {/* Plaka Şehir İsmi Bölümü */}
                     {cityName ? (
                         <View className="bg-emerald-500/20 px-4 py-1.5 rounded-full mt-2 border border-emerald-500/30">
                             <Text className="text-emerald-400 text-lg font-bold">📍 {cityName}</Text>
@@ -103,11 +108,11 @@ export default function HomeScreen() {
             if (data && data.startDate) {
                 setSetup(data);
             } else {
-                setError("Kullanıcı bilgileri bulunamadı.");
+                setError('Kullanıcı bilgileri bulunamadı.');
             }
         } catch (err) {
-            console.error("Home Stats error", err);
-            setError("Veriler yüklenirken bir sorun oluştu.");
+            console.error('Home Stats error', err);
+            setError('Veriler yüklenirken bir sorun oluştu.');
         }
     };
 
@@ -135,11 +140,11 @@ export default function HomeScreen() {
                 remaining,
                 percentage: Math.min(percentage, 100),
                 targetDate: format(end, 'dd MMMM yyyy', { locale: tr }),
-                totalDays: effectiveTotalDays
+                totalDays: effectiveTotalDays,
             });
         } catch (e) {
-            console.error("Calculation error", e);
-            setError("Tarih hesaplamasında bir hata oluştu.");
+            console.error('Calculation error', e);
+            setError('Tarih hesaplamasında bir hata oluştu.');
         }
     };
 
@@ -154,9 +159,7 @@ export default function HomeScreen() {
     }, []);
 
     useEffect(() => {
-        if (setup) {
-            calculateStats(setup);
-        }
+        if (setup) calculateStats(setup);
     }, [setup]);
 
     const milestones = useMemo(() => {
@@ -177,8 +180,8 @@ export default function HomeScreen() {
             { id: 11, title: 'Doğan Güneş', targetPassed: stats.totalDays, icon: Sunrise },
         ];
 
-        const validMilestones = rawMilestones.filter(m => m.targetPassed > 0 && m.targetPassed <= stats.totalDays);
-        const lockedMilestones = rawMilestones.filter(m => m.targetPassed <= 0 || m.targetPassed > stats.totalDays);
+        const validMilestones = rawMilestones.filter((m) => m.targetPassed > 0 && m.targetPassed <= stats.totalDays);
+        const lockedMilestones = rawMilestones.filter((m) => m.targetPassed <= 0 || m.targetPassed > stats.totalDays);
 
         validMilestones.sort((a, b) => a.targetPassed - b.targetPassed);
 
@@ -189,13 +192,16 @@ export default function HomeScreen() {
                 isLocked: false,
                 startAt: prevTarget,
                 endAt: m.targetPassed,
-                kalanSafak: Math.max(0, stats.totalDays - m.targetPassed)
+                kalanSafak: Math.max(0, stats.totalDays - m.targetPassed),
             };
             prevTarget = m.targetPassed;
             return mInfo;
         });
 
-        return [...processedValidMilestones, ...lockedMilestones.map(m => ({ ...m, isLocked: true, startAt: 0, endAt: 0, kalanSafak: 0 }))];
+        return [
+            ...processedValidMilestones,
+            ...lockedMilestones.map((m) => ({ ...m, isLocked: true, startAt: 0, endAt: 0, kalanSafak: 0 })),
+        ];
     }, [stats.totalDays, stats.passed]);
 
     if (error) {
@@ -210,89 +216,141 @@ export default function HomeScreen() {
     if (!setup) return null;
 
     return (
-        <ScrollView
-            className="flex-1 bg-safakDark"
-            contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />}
-        >
-            <View className="mt-8 flex-row justify-between items-center mb-6">
-                <View>
-                    <Text className="text-gray-400 text-lg uppercase tracking-wider font-semibold">Merhaba, {setup.userName}</Text>
-                    <Text className="text-white text-4xl font-bold mt-1">Şafak SAYAR</Text>
+        // ✅ DIŞ KAPLAMA: banner'ı sabitlemek için
+        <View className="flex-1 bg-safakDark">
+            <ScrollView
+                className="flex-1 bg-safakDark"
+                // ✅ banner için ekstra boşluk (UI üst kısım aynen kalır)
+                contentContainerStyle={{ padding: 24, paddingBottom: 170 }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />}
+            >
+                <View className="mt-8 flex-row justify-between items-center mb-6">
+                    <View>
+                        <Text className="text-gray-400 text-lg uppercase tracking-wider font-semibold">
+                            Merhaba, {setup.userName}
+                        </Text>
+                        <Text className="text-white text-4xl font-bold mt-1">Şafak SAYAR</Text>
+                    </View>
+                    <View className="bg-[#10b98115] p-3 rounded-full">
+                        <ShieldAlert size={32} color="#10b981" />
+                    </View>
                 </View>
-                <View className="bg-[#10b98115] p-3 rounded-full">
-                    <ShieldAlert size={32} color="#10b981" />
-                </View>
-            </View>
 
-            <View className="flex-row mb-8 bg-safakSecondary p-4 rounded-2xl border border-gray-700">
-                <View className="flex-1 flex-row items-center border-r border-gray-700 pr-2">
-                    <MapPin size={20} color="#f43f5e" className="mr-2" />
-                    <View><Text className="text-gray-400 text-xs">Memleket</Text><Text className="text-white font-medium" numberOfLines={1}>{setup.hometown}</Text></View>
+                <View className="flex-row mb-8 bg-safakSecondary p-4 rounded-2xl border border-gray-700">
+                    <View className="flex-1 flex-row items-center border-r border-gray-700 pr-2">
+                        <MapPin size={20} color="#f43f5e" className="mr-2" />
+                        <View>
+                            <Text className="text-gray-400 text-xs">Memleket</Text>
+                            <Text className="text-white font-medium" numberOfLines={1}>
+                                {setup.hometown}
+                            </Text>
+                        </View>
+                    </View>
+                    <View className="flex-1 flex-row items-center pl-4">
+                        <Map size={20} color="#3b82f6" className="mr-2" />
+                        <View>
+                            <Text className="text-gray-400 text-xs">Birlik</Text>
+                            <Text className="text-white font-medium" numberOfLines={1}>
+                                {setup.militaryCity}
+                            </Text>
+                        </View>
+                    </View>
                 </View>
-                <View className="flex-1 flex-row items-center pl-4">
-                    <Map size={20} color="#3b82f6" className="mr-2" />
-                    <View><Text className="text-gray-400 text-xs">Birlik</Text><Text className="text-white font-medium" numberOfLines={1}>{setup.militaryCity}</Text></View>
-                </View>
-            </View>
 
-            <DailyProgressCircle remaining={stats.remaining} />
+                <DailyProgressCircle remaining={stats.remaining} />
 
-            <View className="flex-row justify-between mb-8 gap-x-4">
-                <View className="flex-1 bg-safakSecondary p-5 rounded-2xl border border-gray-700 items-center">
-                    <Sun size={28} color="#f59e0b" className="mb-3" />
-                    <Text className="text-gray-400 text-sm mb-1">Geçen</Text>
-                    <Text className="text-white text-2xl font-bold">{stats.passed} Gün</Text>
+                <View className="flex-row justify-between mb-8 gap-x-4">
+                    <View className="flex-1 bg-safakSecondary p-5 rounded-2xl border border-gray-700 items-center">
+                        <Sun size={28} color="#f59e0b" className="mb-3" />
+                        <Text className="text-gray-400 text-sm mb-1">Geçen</Text>
+                        <Text className="text-white text-2xl font-bold">{stats.passed} Gün</Text>
+                    </View>
+                    <View className="flex-1 bg-safakSecondary p-5 rounded-2xl border border-gray-700 items-center">
+                        <CalendarDays size={28} color="#3b82f6" className="mb-3" />
+                        <Text className="text-gray-400 text-sm mb-1">Bitiş</Text>
+                        <Text className="text-white text-base font-bold text-center">{stats.targetDate}</Text>
+                    </View>
                 </View>
-                <View className="flex-1 bg-safakSecondary p-5 rounded-2xl border border-gray-700 items-center">
-                    <CalendarDays size={28} color="#3b82f6" className="mb-3" />
-                    <Text className="text-gray-400 text-sm mb-1">Bitiş</Text>
-                    <Text className="text-white text-base font-bold text-center">{stats.targetDate}</Text>
-                </View>
-            </View>
 
-            <View className="bg-safakSecondary p-5 rounded-2xl border border-gray-700 flex-row justify-between mb-8">
-                <View className="items-center flex-1 border-r border-gray-700">
-                    <Text className="text-gray-400 text-xs mb-1">Yol İzni</Text>
-                    <Text className="text-white font-bold">{setup.roadLeave || 0} Gün</Text>
+                <View className="bg-safakSecondary p-5 rounded-2xl border border-gray-700 flex-row justify-between mb-8">
+                    <View className="items-center flex-1 border-r border-gray-700">
+                        <Text className="text-gray-400 text-xs mb-1">Yol İzni</Text>
+                        <Text className="text-white font-bold">{setup.roadLeave || 0} Gün</Text>
+                    </View>
+                    <View className="items-center flex-1 border-r border-gray-700">
+                        <Text className="text-gray-400 text-xs mb-1">Kullanılan İzin</Text>
+                        <Text className="text-white font-bold">{setup.usedLeave || 0} Gün</Text>
+                    </View>
+                    <View className="items-center flex-1">
+                        <Text className="text-gray-400 text-xs mb-1">Ceza</Text>
+                        <Text className="text-red-400 font-bold">{setup.penalty || 0} Gün</Text>
+                    </View>
                 </View>
-                <View className="items-center flex-1 border-r border-gray-700">
-                    <Text className="text-gray-400 text-xs mb-1">Kullanılan İzin</Text>
-                    <Text className="text-white font-bold">{setup.usedLeave || 0} Gün</Text>
-                </View>
-                <View className="items-center flex-1">
-                    <Text className="text-gray-400 text-xs mb-1">Ceza</Text>
-                    <Text className="text-red-400 font-bold">{setup.penalty || 0} Gün</Text>
-                </View>
-            </View>
 
-            <View className="bg-safakSecondary/50 p-5 rounded-2xl border border-safakPrimary/20 mb-8 flex-row items-start">
-                <Quote size={20} color="#10b981" className="mr-3 mt-1" />
-                <View className="flex-1">
-                    <Text className="text-gray-400 text-xs font-bold uppercase mb-1">Günün Sözü</Text>
-                    <Text className="text-white italic text-base leading-6">"{quote}"</Text>
+                <View className="bg-safakSecondary/50 p-5 rounded-2xl border border-safakPrimary/20 mb-8 flex-row items-start">
+                    <Quote size={20} color="#10b981" className="mr-3 mt-1" />
+                    <View className="flex-1">
+                        <Text className="text-gray-400 text-xs font-bold uppercase mb-1">Günün Sözü</Text>
+                        <Text className="text-white italic text-base leading-6">"{quote}"</Text>
+                    </View>
                 </View>
-            </View>
 
-            <View className="mb-8">
-                <Text className="text-white font-semibold text-lg mb-4">Şafak Görevleri</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-6 px-6" contentContainerStyle={{ paddingRight: 48 }}>
-                    {milestones.map((m) => (
-                        <View key={m.id} className={`w-36 p-4 rounded-2xl border mr-4 justify-between ${m.isLocked ? 'bg-safakSecondary border-gray-800 opacity-50' : (stats.passed >= m.endAt ? 'bg-[#10b98115] border-[#10b98150]' : 'bg-safakSecondary border-gray-700')}`}>
-                            <View className="items-center mb-2">
-                                {m.isLocked ? <Lock size={28} color="#4b5563" /> : <m.icon size={28} color={stats.passed >= m.endAt ? '#10b981' : '#6b7280'} />}
-                            </View>
-                            <Text className="text-white font-bold text-center text-sm mb-1 h-10" numberOfLines={2}>{m.title}</Text>
-                            <Text className="text-gray-400 text-[10px] text-center mb-2">Görev Şafağı: <Text className="text-white font-bold">{m.isLocked ? '--' : m.kalanSafak}</Text></Text>
-                            <View className="mt-auto">
-                                <View className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                                    <View className="h-full bg-safakPrimary" style={{ width: `${m.isLocked ? 0 : Math.min(100, (stats.passed / m.endAt) * 100)}%` }} />
+                <View className="mb-8">
+                    <Text className="text-white font-semibold text-lg mb-4">Şafak Görevleri</Text>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        className="-mx-6 px-6"
+                        contentContainerStyle={{ paddingRight: 48 }}
+                    >
+                        {milestones.map((m) => (
+                            <View
+                                key={m.id}
+                                className={`w-36 p-4 rounded-2xl border mr-4 justify-between ${m.isLocked
+                                    ? 'bg-safakSecondary border-gray-800 opacity-50'
+                                    : stats.passed >= m.endAt
+                                        ? 'bg-[#10b98115] border-[#10b98150]'
+                                        : 'bg-safakSecondary border-gray-700'
+                                    }`}
+                            >
+                                <View className="items-center mb-2">
+                                    {m.isLocked ? (
+                                        <Lock size={28} color="#4b5563" />
+                                    ) : (
+                                        <m.icon size={28} color={stats.passed >= m.endAt ? '#10b981' : '#6b7280'} />
+                                    )}
+                                </View>
+                                <Text className="text-white font-bold text-center text-sm mb-1 h-10" numberOfLines={2}>
+                                    {m.title}
+                                </Text>
+                                <Text className="text-gray-400 text-[10px] text-center mb-2">
+                                    Görev Şafağı: <Text className="text-white font-bold">{m.isLocked ? '--' : m.kalanSafak}</Text>
+                                </Text>
+                                <View className="mt-auto">
+                                    <View className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                                        <View
+                                            className="h-full bg-safakPrimary"
+                                            style={{ width: `${m.isLocked ? 0 : Math.min(100, (stats.passed / m.endAt) * 100)}%` }}
+                                        />
+                                    </View>
                                 </View>
                             </View>
-                        </View>
-                    ))}
-                </ScrollView>
+                        ))}
+                    </ScrollView>
+                </View>
+            </ScrollView>
+
+            {/* ✅ Sabit Banner (UI değişmeden, altta durur) */}
+            <View
+                style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                }}
+            >
+                <AdBanner />
             </View>
-        </ScrollView>
+        </View>
     );
 }
