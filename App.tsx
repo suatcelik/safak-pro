@@ -1,6 +1,6 @@
 import "./global.css";
 import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -12,9 +12,9 @@ import { initAds } from "./src/services/ads";
 import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
 
 // IAP
-import { initIAP, restorePurchases } from "./src/services/iapService";
+import { initIAP, restorePurchases, endIAP } from "./src/services/iapService";
 
-// Local premium hydrate (opsiyonel ama hızlı açılış için önerilir)
+// Local premium hydrate
 import { getPremiumLocal } from "./src/utils/storage";
 import { useStore } from "./src/store/useStore";
 
@@ -28,11 +28,13 @@ export default function App() {
     // 2) Ads + ATT + IAP başlangıç
     (async () => {
       try {
-        // iOS ATT (isterse sorar)
+        // iOS ATT (hata fırlatabilir, sessizce geçilebilir)
         if (Platform.OS === "ios") {
           try {
             await requestTrackingPermissionsAsync();
-          } catch { }
+          } catch (e: any) {
+            console.log("[ATT] Permission request skipped:", e?.message || e);
+          }
         }
 
         // AdMob init
@@ -42,15 +44,30 @@ export default function App() {
         try {
           const localPremium = await getPremiumLocal();
           if (localPremium) setIsPremium(true);
-        } catch { }
+        } catch (e: any) {
+          console.log("[Premium] Local premium load error:", e?.message || e);
+        }
 
         // IAP init + restore (asıl doğrulama)
         await initIAP();
         await restorePurchases();
       } catch (e) {
-        console.log("App init error:", e);
+        console.log("[App] Init error:", e);
       }
     })();
+
+    // H-4: Uygulama arka plana geçince IAP bağlantısını kapat
+    const appStateSub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "background" || nextState === "inactive") {
+        endIAP().catch((e: any) =>
+          console.log("[IAP] endIAP on background error:", e?.message || e)
+        );
+      }
+    });
+
+    return () => {
+      appStateSub.remove();
+    };
   }, [setIsPremium]);
 
   return (

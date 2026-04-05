@@ -3,9 +3,8 @@ export type RootStackParamList = {
     Onboarding: undefined;
     Setup: undefined;
     MainTabs: undefined;
-
-    // ✅ EKLENDİ
     Premium: undefined;
+    LeaveCalculator: undefined;
 };
 
 export type MainTabParamList = {

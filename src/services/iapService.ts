@@ -34,7 +34,9 @@ export async function initIAP() {
                 if (typeof fn === "function") {
                     await fn();
                 }
-            } catch { }
+            } catch (e: any) {
+                console.log("[IAP] Android flush error (ignored):", e?.message || e);
+            }
         }
 
         purchaseUpdateSub?.remove?.();
@@ -65,7 +67,8 @@ export async function initIAP() {
 
         iapInited = true;
         return ok;
-    } catch (e) {
+    } catch (e: any) {
+        console.log("[IAP] initIAP failed:", e?.message || e);
         iapInited = false;
         throw new Error("Market bağlantısı kurulamadı.");
     }
@@ -112,7 +115,8 @@ export async function restorePurchases() {
         }
 
         return hasPremium;
-    } catch {
+    } catch (e: any) {
+        console.log("[IAP] restorePurchases failed:", e?.message || e);
         throw new Error("Geri yükleme başarısız.");
     }
 }
@@ -124,7 +128,9 @@ export async function endIAP() {
 
     try {
         await RNIap.endConnection();
-    } catch { }
+    } catch (e: any) {
+        console.log("[IAP] endConnection error (ignored):", e?.message || e);
+    }
 
     iapInited = false;
 }
