@@ -17,8 +17,12 @@ const REWARDED_ID =
             android: ANDROID_REWARDED_ID
         }) as string
 
+// Reklam yüklemesi 30 saniye içinde tamamlanmazsa busy flag sıfırlanır
+const BUSY_TIMEOUT_MS = 30_000
+
 let rewarded: any = null
 let busy = false
+let busyTimeout: ReturnType<typeof setTimeout> | null = null
 
 export async function initAds() {
     await mobileAds().initialize()
@@ -37,6 +41,13 @@ export async function showRewardedGate(): Promise<boolean> {
 
     if (busy) return false
     busy = true
+
+    // H-5: Takılma koruması — 30 saniye sonra busy'yi zorla sıfırla
+    busyTimeout = setTimeout(() => {
+        console.log('[Ads] Rewarded gate busy timeout — sıfırlanıyor')
+        busy = false
+        busyTimeout = null
+    }, BUSY_TIMEOUT_MS)
 
     const ad = getRewarded()
 
@@ -66,7 +77,8 @@ export async function showRewardedGate(): Promise<boolean> {
 
         const subError = ad.addAdEventListener(
             AdEventType.ERROR,
-            () => {
+            (error: any) => {
+                console.log('[Ads] Rewarded ad error:', error?.message || error)
                 cleanup()
                 Alert.alert(
                     "Reklam yüklenemedi",
@@ -80,6 +92,10 @@ export async function showRewardedGate(): Promise<boolean> {
         )
 
         function cleanup() {
+            if (busyTimeout) {
+                clearTimeout(busyTimeout)
+                busyTimeout = null
+            }
             subLoaded()
             subEarned()
             subClosed()

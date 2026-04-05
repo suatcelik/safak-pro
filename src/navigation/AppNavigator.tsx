@@ -8,6 +8,7 @@ import { RootStackParamList } from './types';
 
 // ✅ EKLENDİ
 import PremiumScreen from '../screens/PremiumScreen';
+import LeaveCalculatorScreen from '../screens/LeaveCalculatorScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -17,16 +18,15 @@ export default function AppNavigator() {
             initialRouteName="Splash"
             screenOptions={{
                 headerShown: false,
-                animation: 'fade', // Yumuşak geçiş
+                animation: 'fade',
             }}
         >
             <Stack.Screen name="Splash" component={SplashScreen} />
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="Setup" component={SetupScreen} />
             <Stack.Screen name="MainTabs" component={TabNavigator} />
-
-            {/* ✅ PREMIUM */}
             <Stack.Screen name="Premium" component={PremiumScreen} />
+            <Stack.Screen name="LeaveCalculator" component={LeaveCalculatorScreen} />
         </Stack.Navigator>
     );
 }

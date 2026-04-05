@@ -5,8 +5,11 @@ export const USER_SETUP_KEY = 'userSetupInfo';
 export const PAINTED_DAYS_KEY = 'paintedDaysInfo';
 export const LAST_COLOR_KEY = 'lastSelectedColor';
 
-// ✅ EKLENDİ: Premium flag
+// Premium flag
 export const IS_PREMIUM_KEY = 'IS_PREMIUM_V1';
+
+// Y-4: Tema tercihi
+export const THEME_KEY = 'APP_THEME_V1';
 
 export interface SetupInfo {
     militaryType: 'short' | 'long' | 'paid' | 'officer';
@@ -145,5 +148,23 @@ export const setPremiumLocal = async (enabled: boolean) => {
         await AsyncStorage.setItem(IS_PREMIUM_KEY, enabled ? '1' : '0');
     } catch (e) {
         console.error('Error saving premium flag', e);
+    }
+};
+
+// Y-4: Tema yardımcıları
+export const getThemeLocal = async (): Promise<'dark' | 'light'> => {
+    try {
+        const v = await AsyncStorage.getItem(THEME_KEY);
+        return v === 'light' ? 'light' : 'dark';
+    } catch {
+        return 'dark';
+    }
+};
+
+export const setThemeLocal = async (theme: 'dark' | 'light') => {
+    try {
+        await AsyncStorage.setItem(THEME_KEY, theme);
+    } catch (e) {
+        console.error('Error saving theme preference', e);
     }
 };
