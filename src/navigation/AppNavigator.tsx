@@ -8,7 +8,7 @@ import { RootStackParamList } from './types';
 
 // ✅ EKLENDİ
 import PremiumScreen from '../screens/PremiumScreen';
-import LeaveCalculatorScreen from '../screens/LeaveCalculatorScreen';
+
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -26,7 +26,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Setup" component={SetupScreen} />
             <Stack.Screen name="MainTabs" component={TabNavigator} />
             <Stack.Screen name="Premium" component={PremiumScreen} />
-            <Stack.Screen name="LeaveCalculator" component={LeaveCalculatorScreen} />
+
         </Stack.Navigator>
     );
 }

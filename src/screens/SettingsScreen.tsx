@@ -58,20 +58,7 @@ export default function SettingsScreen() {
         navigation.navigate('Premium');
     };
 
-    // Y-4: Tema toggle işleyicisi
-    const handleThemeToggle = async (value: boolean) => {
-        const newTheme = value ? 'light' : 'dark';
-        setTheme(newTheme);
-        await setThemeLocal(newTheme);
-        // Not: tam light tema renk uygulaması gelecek sürümde
-        if (newTheme === 'light') {
-            Alert.alert(
-                'Açık Tema',
-                'Açık tema tercihiniz kaydedildi. Tam açık tema desteği yakında gelecek.',
-                [{ text: 'Tamam' }]
-            );
-        }
-    };
+
 
     return (
         <View className="flex-1 bg-safakDark">
@@ -102,23 +89,6 @@ export default function SettingsScreen() {
                                 <CalendarDays size={24} color="#3b82f6" />
                                 <Text className="text-white text-lg font-medium ml-4">Bilgileri Güncelle</Text>
                             </View>
-                        </TouchableOpacity>
-
-                        {/* Y-5: İzin Hesaplama linki */}
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between p-5 border-b border-gray-700"
-                            onPress={() => navigation.navigate('LeaveCalculator')}
-                            accessibilityLabel="İzin hesabını görüntüle"
-                            accessibilityRole="button"
-                        >
-                            <View className="flex-row items-center">
-                                <Palmtree size={24} color="#10b981" />
-                                <View className="ml-4">
-                                    <Text className="text-white text-lg font-medium">İzin Hesabı</Text>
-                                    <Text className="text-gray-400 text-xs mt-0.5">Hak edilen ve kalan izinler</Text>
-                                </View>
-                            </View>
-                            <Text className="text-gray-400 text-sm">{'>'}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -161,30 +131,6 @@ export default function SettingsScreen() {
                             </Text>
                         </TouchableOpacity>
 
-                        {/* Y-4: Tema toggle */}
-                        <View
-                            className="flex-row items-center justify-between p-5 border-b border-gray-700"
-                            accessibilityLabel={`Açık tema ${theme === 'light' ? 'aktif' : 'kapalı'}`}
-                        >
-                            <View className="flex-row items-center">
-                                {theme === 'light' ? (
-                                    <Sun size={24} color="#f59e0b" />
-                                ) : (
-                                    <Moon size={24} color="#94a3b8" />
-                                )}
-                                <View className="ml-4">
-                                    <Text className="text-white text-lg font-medium">Açık Tema</Text>
-                                    <Text className="text-gray-400 text-xs mt-0.5">Yakında tam destek</Text>
-                                </View>
-                            </View>
-                            <Switch
-                                value={theme === 'light'}
-                                onValueChange={handleThemeToggle}
-                                trackColor={{ false: '#334155', true: '#10b981' }}
-                                thumbColor={theme === 'light' ? '#fff' : '#94a3b8'}
-                                accessibilityLabel="Açık tema toggle"
-                            />
-                        </View>
 
                         {/* Gizlilik Politikası */}
                         <TouchableOpacity

@@ -20,21 +20,11 @@ const REWARDED_ID =
 // Reklam yüklemesi 30 saniye içinde tamamlanmazsa busy flag sıfırlanır
 const BUSY_TIMEOUT_MS = 30_000
 
-let rewarded: any = null
 let busy = false
 let busyTimeout: ReturnType<typeof setTimeout> | null = null
 
 export async function initAds() {
     await mobileAds().initialize()
-}
-
-function getRewarded() {
-    if (!rewarded) {
-        rewarded = RewardedAd.createForAdRequest(REWARDED_ID, {
-            requestNonPersonalizedAdsOnly: true
-        })
-    }
-    return rewarded
 }
 
 export async function showRewardedGate(): Promise<boolean> {
@@ -49,15 +39,35 @@ export async function showRewardedGate(): Promise<boolean> {
         busyTimeout = null
     }, BUSY_TIMEOUT_MS)
 
-    const ad = getRewarded()
+    // ✅ FIX: Her seferinde yeni bir RewardedAd instance oluştur
+    // Eski instance tekrar load() edildiğinde Android'de çalışmayabiliyor
+    const ad = RewardedAd.createForAdRequest(REWARDED_ID, {
+        requestNonPersonalizedAdsOnly: true
+    })
 
     return new Promise((resolve) => {
 
         let earned = false
+        let resolved = false
 
+        function safeResolve(value: boolean) {
+            if (resolved) return
+            resolved = true
+            cleanup()
+            resolve(value)
+        }
+
+        // ✅ FIX: RewardedAd v16+ requires RewardedAdEventType.LOADED
         const subLoaded = ad.addAdEventListener(
-            AdEventType.LOADED,
-            () => ad.show()
+            RewardedAdEventType.LOADED,
+            () => {
+                try {
+                    ad.show()
+                } catch (e: any) {
+                    console.log('[Ads] ad.show() error:', e?.message || e)
+                    safeResolve(false)
+                }
+            }
         )
 
         const subEarned = ad.addAdEventListener(
@@ -70,8 +80,7 @@ export async function showRewardedGate(): Promise<boolean> {
         const subClosed = ad.addAdEventListener(
             AdEventType.CLOSED,
             () => {
-                cleanup()
-                resolve(earned)
+                safeResolve(earned)
             }
         )
 
@@ -84,8 +93,8 @@ export async function showRewardedGate(): Promise<boolean> {
                     "Reklam yüklenemedi",
                     "Yine de takvime girmek ister misin?",
                     [
-                        { text: "Vazgeç", style: "cancel", onPress: () => resolve(false) },
-                        { text: "Devam Et", onPress: () => resolve(true) }
+                        { text: "Vazgeç", style: "cancel", onPress: () => { resolved = true; resolve(false) } },
+                        { text: "Devam Et", onPress: () => { resolved = true; resolve(true) } }
                     ]
                 )
             }
@@ -96,10 +105,10 @@ export async function showRewardedGate(): Promise<boolean> {
                 clearTimeout(busyTimeout)
                 busyTimeout = null
             }
-            subLoaded()
-            subEarned()
-            subClosed()
-            subError()
+            try { subLoaded() } catch { }
+            try { subEarned() } catch { }
+            try { subClosed() } catch { }
+            try { subError() } catch { }
             busy = false
         }
 
