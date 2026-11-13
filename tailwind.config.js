@@ -1,14 +1,27 @@
+/* global __filename */
+// Renk, yazı ve köşe değerleri src/theme/tokens.ts'den gelir (tek kaynak).
+const jiti = require('jiti')(__filename);
+const { colors, fonts, radius } = jiti('./src/theme/tokens.ts');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  // NOTE: Update this to include the paths to all files that contain Nativewind classes.
-  content: ['./App.tsx', './components/**/*.{js,jsx,ts,tsx}', './src/**/*.{js,jsx,ts,tsx}'],
+  content: ['./App.tsx', './src/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
-      colors: {
-        safakDark: '#0f172a', // slate-900
-        safakPrimary: '#10b981', // emerald-500
-        safakSecondary: '#334155', // slate-700
+      colors,
+      fontFamily: {
+        sans: [fonts.medium],
+        jk400: [fonts.regular],
+        jk500: [fonts.medium],
+        jk600: [fonts.semibold],
+        jk700: [fonts.bold],
+        jk800: [fonts.extrabold],
+      },
+      borderRadius: {
+        card: `${radius.card}px`,
+        'card-sm': `${radius.cardSm}px`,
+        chip: `${radius.chip}px`,
       },
     },
   },

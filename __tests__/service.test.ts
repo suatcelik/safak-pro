@@ -38,10 +38,7 @@ describe('computeService', () => {
   });
 
   it('uzun dönem (365)', () => {
-    const s = computeService(
-      base({ militaryType: 'long', totalDays: 365 }),
-      day('2026-07-01'),
-    );
+    const s = computeService(base({ militaryType: 'long', totalDays: 365 }), day('2026-07-01'));
     expect(s.effectiveTotal).toBe(365);
     expect(s.passed).toBe(181);
     expect(s.remaining).toBe(184);

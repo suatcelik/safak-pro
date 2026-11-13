@@ -1,95 +1,84 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { Calendar, Target, Flag } from 'lucide-react-native';
+import { Pressable, View } from 'react-native';
+import { ArrowRight } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useStore } from '../store/useStore';
+import { colors } from '../theme/tokens';
+import { Body, Button, Heading, PageDots, Screen, ScreenTone, Typo } from '../components/ui';
+import { CountdownArt, MilestonesArt, PaintArt } from '../components/onboarding/OnboardingArt';
 
-type OnboardingNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
+type Nav = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 
-const slides = [
+const SLIDES: { tone: ScreenTone; title: string; text: string; Art: () => React.JSX.Element }[] = [
   {
-    id: '1',
-    title: 'Şafağını Say',
-    description: 'Askersen, şafağını en güzel şekilde hesaplamak için doğru yerdesin.',
-    icon: <Calendar size={80} color="#10b981" />,
+    tone: 'accent',
+    title: 'Şafağını say',
+    text: 'Kalan günün, terhis tarihin ve ilerlemen her sabah tek bakışta.',
+    Art: CountdownArt,
   },
   {
-    id: '2',
-    title: 'Motivasyon',
-    description: 'Her gün sana moral verecek yeni sözlerle askerliğini renklendir.',
-    icon: <Target size={80} color="#10b981" />,
+    tone: 'pink',
+    title: 'Günlerini boya',
+    text: 'Biten her günü takvimde istediğin renkle boya, şafağın rakamları dolsun.',
+    Art: PaintArt,
   },
   {
-    id: '3',
-    title: 'Hemen Başla',
-    description: 'Bilgilerini gir ve vatan borcunu saymaya başla!',
-    icon: <Flag size={80} color="#10b981" />,
+    tone: 'purple',
+    title: 'Kilometre taşlarını aç',
+    text: 'Acemilikten doğan güneşe, her eşiği geçtikçe yeni bir kart açılır.',
+    Art: MilestonesArt,
   },
 ];
 
 export default function OnboardingScreen() {
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-  const navigation = useNavigation<OnboardingNavigationProp>();
+  const [index, setIndex] = useState(0);
+  const navigation = useNavigation<Nav>();
   const completeOnboarding = useStore((s) => s.completeOnboarding);
+  const slide = SLIDES[index];
+  const last = index === SLIDES.length - 1;
 
-  const nextSlide = () => {
-    if (currentSlideIndex < slides.length - 1) {
-      setCurrentSlideIndex(currentSlideIndex + 1);
-    } else {
-      completeOnboarding();
-      navigation.replace('Setup');
-    }
-  };
-
-  const skipSlide = () => {
+  const finish = () => {
     completeOnboarding();
     navigation.replace('Setup');
   };
 
-  const currentSlide = slides[currentSlideIndex];
-
   return (
-    <View className="flex-1 items-center justify-center bg-safakDark p-6">
-      {/* İkon */}
-      <View className="flex-1 items-center justify-center">
-        <View className="rounded-full bg-safakSecondary p-8 shadow-lg">{currentSlide.icon}</View>
-        <Text className="mt-10 text-center text-3xl font-bold text-white">
-          {currentSlide.title}
-        </Text>
-        <Text className="mt-4 px-4 text-center text-lg leading-7 text-gray-400">
-          {currentSlide.description}
-        </Text>
-      </View>
-
-      {/* Noktalar */}
-      <View className="mb-12 flex-row">
-        {slides.map((_, index) => (
-          <View
-            key={index}
-            className={`mx-1 h-2 rounded-full ${
-              currentSlideIndex === index ? 'w-8 bg-safakPrimary' : 'w-2 bg-gray-600'
-            }`}
-          />
-        ))}
-      </View>
-
-      {/* Butonlar */}
-      <View className="mb-8 w-full flex-row items-center justify-between px-4">
-        <TouchableOpacity onPress={skipSlide}>
-          <Text className="text-lg font-semibold text-gray-400">Atla</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="rounded-full bg-safakPrimary px-10 py-4 shadow-lg"
-          onPress={nextSlide}
+    <Screen tone={slide.tone}>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+        <Pressable
+          onPress={finish}
+          accessibilityRole="button"
+          accessibilityLabel="Tanıtımı atla"
+          style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}
         >
-          <Text className="text-lg font-bold text-safakDark">
-            {currentSlideIndex === slides.length - 1 ? 'Başla' : 'İleri'}
-          </Text>
-        </TouchableOpacity>
+          <Typo variant="bodyStrong" color="ink">
+            Atla
+          </Typo>
+        </Pressable>
       </View>
-    </View>
+
+      <View style={{ flex: 1 }}>
+        <slide.Art />
+      </View>
+
+      <View style={{ gap: 12, marginBottom: 32 }}>
+        <Heading color="ink" size={40} style={{ lineHeight: 42, letterSpacing: -1.2 }}>
+          {slide.title}
+        </Heading>
+        <Body color="ink">{slide.text}</Body>
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <PageDots count={SLIDES.length} index={index} />
+        <Button
+          variant="secondary"
+          label={last ? 'Başla' : 'İleri'}
+          icon={<ArrowRight size={20} color={colors.white} strokeWidth={2.5} />}
+          onPress={() => (last ? finish() : setIndex(index + 1))}
+        />
+      </View>
+    </Screen>
   );
 }

@@ -29,7 +29,7 @@ Node 20+ önerilir. Uygulama native modüller kullandığı için Expo Go yerine
 src/
   domain/        Saf iş mantığı (servis hesabı, takvim düzenleri) — UI'dan bağımsız, testli
   store/         Zustand store (AsyncStorage'a kalıcı)
-  theme/         Tasarım token'ları (renk, yazı, aralık, köşe)
+  theme/         Tasarım token'ları (renk, yazı, aralık, köşe) — tailwind.config.js buradan okur
   components/
     ui/          Genel UI bileşenleri (Button, Card, Screen…)
     <özellik>/   Özelliğe ait bileşenler

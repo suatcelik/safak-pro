@@ -2,6 +2,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Setup: undefined;
   MainTabs: undefined;
+  Share: undefined;
 };
 
 export type MainTabParamList = {

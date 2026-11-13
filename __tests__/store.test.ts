@@ -88,3 +88,22 @@ describe('useStore', () => {
     expect(again.getState().hasOnboarded).toBe(false);
   });
 });
+
+describe('useStore tercihler', () => {
+  it('bildirimler varsayılan açık ve kapatılabilir, kalıcı', async () => {
+    const store = await loadStore();
+    expect(store.getState().notificationsEnabled).toBe(true);
+    store.getState().setNotificationsEnabled(false);
+    const again = await loadStore();
+    expect(again.getState().notificationsEnabled).toBe(false);
+  });
+
+  it('kutlanan kilometre taşı sayısı tutulur, reset sıfırlar', async () => {
+    const store = await loadStore();
+    expect(store.getState().celebratedMilestones).toBe(0);
+    store.getState().setCelebratedMilestones(4);
+    expect(store.getState().celebratedMilestones).toBe(4);
+    store.getState().reset();
+    expect(store.getState().celebratedMilestones).toBe(0);
+  });
+});

@@ -1,112 +1,177 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert, Linking, ScrollView } from 'react-native';
-import { UserCog, Trash2, CalendarDays, ShieldCheck, ExternalLink } from 'lucide-react-native';
+import { Alert, Linking, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useStore } from '../store/useStore';
-import { cancelAllNotifications } from '../services/notifications';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Constants from 'expo-constants';
+import { Bell, Info, PencilLine, ShieldCheck, Trash2 } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/types';
+import { useStore } from '../store/useStore';
+import {
+  cancelAllNotifications,
+  getNotificationPermission,
+  requestNotificationPermission,
+  rescheduleNotifications,
+} from '../services/notifications';
+import { colors } from '../theme/tokens';
+import { Caption, Card, Heading, ListGroup, ListRow, Screen, Toggle, Typo } from '../components/ui';
+import { TAB_BAR_SPACE } from '../navigation/FloatingTabBar';
 
-type SettingsNavProp = NativeStackNavigationProp<RootStackParamList>;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const PRIVACY_POLICY_URL = 'https://suatcelik.github.io/-afak-Sayar-privacy-policy/';
 
-export default function SettingsScreen() {
-  const navigation = useNavigation<SettingsNavProp>();
-  const resetStore = useStore((s) => s.reset);
+const TYPE_LABEL = {
+  short: 'Kısa dönem',
+  long: 'Uzun dönem',
+  paid: 'Bedelli',
+  officer: 'Yedek subay',
+};
 
-  const handleOpenPrivacyPolicy = async () => {
+export default function SettingsScreen() {
+  const navigation = useNavigation<Nav>();
+  const setup = useStore((s) => s.setup);
+  const resetStore = useStore((s) => s.reset);
+  const notificationsEnabled = useStore((s) => s.notificationsEnabled);
+  const setNotificationsEnabled = useStore((s) => s.setNotificationsEnabled);
+  const version = Constants.expoConfig?.version ?? '';
+
+  const toggleNotifications = async (next: boolean) => {
+    if (!next) {
+      setNotificationsEnabled(false);
+      await cancelAllNotifications().catch(() => {});
+      return;
+    }
+    let status = await getNotificationPermission();
+    if (status === 'undetermined')
+      status = (await requestNotificationPermission()) ? 'granted' : 'denied';
+    if (status !== 'granted') {
+      Alert.alert(
+        'Bildirim izni kapalı',
+        'Bildirimleri açmak için telefonunun ayarlarından Şafak Sayar için izin ver.',
+        [
+          { text: 'Vazgeç', style: 'cancel' },
+          { text: 'Ayarları aç', onPress: () => Linking.openSettings() },
+        ],
+      );
+      return;
+    }
+    setNotificationsEnabled(true);
+    if (setup) await rescheduleNotifications(setup);
+  };
+
+  const openPrivacy = async () => {
     try {
-      const supported = await Linking.canOpenURL(PRIVACY_POLICY_URL);
-      if (supported) {
-        await Linking.openURL(PRIVACY_POLICY_URL);
-      } else {
-        Alert.alert('Hata', 'Gizlilik politikası sayfası şu an açılamıyor.');
-      }
+      await Linking.openURL(PRIVACY_POLICY_URL);
     } catch {
-      Alert.alert('Hata', 'Bağlantı açılırken bir sorun oluştu.');
+      Alert.alert('Hata', 'Gizlilik politikası şu an açılamıyor.');
     }
   };
 
   const handleReset = () => {
-    Alert.alert('Sıfırla', 'Tüm şafak ve sülüs bilgilerin silinecek. Emin misin?', [
-      { text: 'İptal', style: 'cancel' },
-      {
-        text: 'Sil ve Sıfırla',
-        style: 'destructive',
-        onPress: async () => {
-          await cancelAllNotifications().catch(() => {});
-          resetStore();
-          const root = navigation.getParent<SettingsNavProp>() ?? navigation;
-          root.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+    Alert.alert(
+      'Tüm veriler silinsin mi?',
+      'Şafak bilgilerin, boyadığın günler ve bildirimler silinecek.',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sil ve sıfırla',
+          style: 'destructive',
+          onPress: async () => {
+            await cancelAllNotifications().catch(() => {});
+            resetStore();
+            const root = navigation.getParent<Nav>() ?? navigation;
+            root.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
+  const initial = setup?.userName?.trim().charAt(0).toLocaleUpperCase('tr') || 'Ş';
+
   return (
-    <View className="flex-1 bg-safakDark">
-      <ScrollView className="flex-1 bg-safakDark" contentContainerStyle={{ paddingBottom: 32 }}>
-        <View className="p-6">
-          <View className="mb-10 mt-12 flex-row items-center">
-            <UserCog size={32} color="#10b981" />
-            <Text className="ml-3 text-3xl font-bold text-white">Ayarlar</Text>
+    <Screen scroll edges={['top']} bottomInset={TAB_BAR_SPACE} contentStyle={{ gap: 20 }}>
+      <Heading>Ayarlar</Heading>
+
+      {setup ? (
+        <Card tone="accent" style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 999,
+              backgroundColor: colors.ink,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typo variant="heading" color="accent" size={22}>
+              {initial}
+            </Typo>
           </View>
-
-          <Text className="mb-4 px-2 text-sm font-semibold uppercase tracking-wide text-gray-400">
-            Hesap & Veri
-          </Text>
-
-          <View className="mb-8 overflow-hidden rounded-2xl border border-gray-700 bg-safakSecondary">
-            <TouchableOpacity
-              className="flex-row items-center justify-between border-b border-gray-700 p-5"
-              onPress={() => navigation.navigate('Setup')}
-              accessibilityLabel="Askerlik bilgilerini güncelle"
-              accessibilityRole="button"
-            >
-              <View className="flex-row items-center">
-                <CalendarDays size={24} color="#3b82f6" />
-                <Text className="ml-4 text-lg font-medium text-white">Bilgileri Güncelle</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="flex-row items-center justify-between p-5"
-              onPress={handleReset}
-              accessibilityLabel="Tüm verileri sıfırla"
-              accessibilityRole="button"
-            >
-              <View className="flex-row items-center">
-                <Trash2 size={24} color="#ef4444" />
-                <Text className="ml-4 text-lg font-medium text-red-400">Tüm Verileri Sıfırla</Text>
-              </View>
-            </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Typo variant="subheading" color="ink" size={20} numberOfLines={1}>
+              {setup.userName}
+            </Typo>
+            <Typo variant="caption" color="inkMuted" size={14} numberOfLines={1}>
+              {TYPE_LABEL[setup.militaryType]} · {setup.hometown} → {setup.militaryCity}
+            </Typo>
           </View>
+        </Card>
+      ) : null}
 
-          <Text className="mb-4 px-2 text-sm font-semibold uppercase tracking-wide text-gray-400">
-            Uygulama
-          </Text>
+      <ListGroup>
+        <ListRow
+          title="Bilgileri güncelle"
+          iconTone="blue"
+          icon={<PencilLine size={20} color={colors.ink} strokeWidth={2.2} />}
+          onPress={() => navigation.navigate('Setup')}
+          divider
+        />
+        <ListRow
+          title="Bildirimler"
+          iconTone="yellow"
+          icon={<Bell size={20} color={colors.ink} strokeWidth={2.2} />}
+          right={
+            <Toggle
+              label="Bildirimler"
+              value={notificationsEnabled}
+              onChange={toggleNotifications}
+            />
+          }
+        />
+      </ListGroup>
 
-          <View className="overflow-hidden rounded-2xl border border-gray-700 bg-safakSecondary">
-            <TouchableOpacity
-              className="flex-row items-center justify-between p-5"
-              onPress={handleOpenPrivacyPolicy}
-              accessibilityLabel="Gizlilik politikasını aç"
-              accessibilityRole="link"
-            >
-              <View className="flex-row items-center">
-                <ShieldCheck size={24} color="#10b981" />
-                <Text className="ml-4 text-lg font-medium text-white">Gizlilik Politikası</Text>
-              </View>
-              <ExternalLink size={20} color="#64748b" />
-            </TouchableOpacity>
-          </View>
+      <ListGroup>
+        <ListRow
+          title="Gizlilik politikası"
+          iconTone="purple"
+          icon={<ShieldCheck size={20} color={colors.ink} strokeWidth={2.2} />}
+          onPress={openPrivacy}
+          accessory="external"
+          accessibilityRole="link"
+          divider
+        />
+        <ListRow
+          title="Hakkında"
+          iconTone="white"
+          icon={<Info size={20} color={colors.ink} strokeWidth={2.2} />}
+          right={<Caption>Sürüm {version}</Caption>}
+        />
+      </ListGroup>
 
-          <View className="mb-10 mt-12 items-center">
-            <Text className="text-sm italic text-gray-600">Şafak Sayar v1.0.0</Text>
-          </View>
-        </View>
-      </ScrollView>
-    </View>
+      <ListGroup danger>
+        <ListRow
+          title="Tüm verileri sıfırla"
+          iconTone="danger"
+          icon={<Trash2 size={20} color={colors.ink} strokeWidth={2.2} />}
+          onPress={handleReset}
+          accessory="none"
+          danger
+        />
+      </ListGroup>
+
+      <Caption align="center">Reklam yok · Veri toplanmaz · Her şey telefonunda</Caption>
+    </Screen>
   );
 }

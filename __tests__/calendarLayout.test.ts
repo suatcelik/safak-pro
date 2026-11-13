@@ -13,9 +13,7 @@ describe('buildCalendarLayout', () => {
     expect(layout.digits.map((d) => d.char).join('')).toBe(label);
     const cells = cellsOf(layout);
     expect(cells).toHaveLength(days);
-    expect([...cells].sort((a, b) => a - b)).toEqual(
-      Array.from({ length: days }, (_, i) => i + 1),
-    );
+    expect([...cells].sort((a, b) => a - b)).toEqual(Array.from({ length: days }, (_, i) => i + 1));
     expect(layout.extraDays).toEqual([]);
   });
 

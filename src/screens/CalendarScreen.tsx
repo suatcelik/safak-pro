@@ -1,33 +1,41 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { Paintbrush, X } from 'lucide-react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { X } from 'lucide-react-native';
+import { differenceInCalendarDays } from 'date-fns';
 import { useStore } from '../store/useStore';
 import { buildCalendarLayout } from '../domain/calendarLayout';
 import { effectiveTotalOf } from '../domain/service';
+import { fromDateKey } from '../domain/dates';
+import { useToday } from '../hooks/useToday';
+import { selectHaptic } from '../services/haptics';
+import { colors } from '../theme/tokens';
+import { Caption, IconButton, Screen, StateView, Typo } from '../components/ui';
+import { DayCell } from '../components/calendar/DayCell';
+import { ColorPalette } from '../components/calendar/ColorPalette';
 
-const COLORS = ['#10b981', '#3b82f6', '#a855f7', '#f43f5e', '#f97316', '#eab308'];
-
-const CELL = {
-  28: { size: 'w-[48px] h-[48px] m-1', text: 'text-base' },
-  180: { size: 'w-[26px] h-[22px] m-[1px]', text: 'text-[9px]' },
-  365: { size: 'w-[22px] h-[18px] m-[1px]', text: 'text-[8px]' },
-} as const;
+const GAP = 2;
+const DIGIT_GAP = 28;
+const EXTRA_ROW = 40;
 
 export default function CalendarScreen() {
   const navigation = useNavigation();
+  const { width, height } = useWindowDimensions();
   const setup = useStore((s) => s.setup);
   const paintedDays = useStore((s) => s.paintedDays);
-  const selectedColor = useStore((s) => s.lastColor);
+  const color = useStore((s) => s.lastColor);
   const togglePaintedDay = useStore((s) => s.togglePaintedDay);
   const setLastColor = useStore((s) => s.setLastColor);
+  const today = useToday();
 
   useFocusEffect(
     useCallback(() => {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
       return () => {
-        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
       };
     }, []),
   );
@@ -37,113 +45,139 @@ export default function CalendarScreen() {
     [setup],
   );
 
+  const onPaint = useCallback(
+    (day: number) => {
+      selectHaptic();
+      togglePaintedDay(day, color);
+    },
+    [togglePaintedDay, color],
+  );
+
   if (!setup || !layout) {
     return (
-      <View className="flex-1 items-center justify-center bg-safakDark">
-        <Text className="text-white">Önce askerlik bilgilerini gir.</Text>
-      </View>
+      <Screen>
+        <StateView
+          kind="empty"
+          title="Takvim boş"
+          message="Önce askerlik bilgilerini gir, rakamların burada belirsin."
+          actionLabel="Ana sayfaya dön"
+          onAction={() => navigation.navigate('Home' as never)}
+        />
+      </Screen>
     );
   }
 
-  const sizeKey = setup.totalDays <= 28 ? 28 : setup.totalDays <= 180 ? 180 : 365;
-  const cell = CELL[sizeKey];
+  const todayNumber = differenceInCalendarDays(today, fromDateKey(setup.startDate)) + 1;
+  const total = effectiveTotalOf(setup);
+  const paintedCount = Object.keys(paintedDays).filter((d) => Number(d) <= total).length;
 
-  const renderCell = (day: number, key: string, sizeClass: string, textClass: string) => {
-    if (day === 0) return <View key={key} className={sizeClass} />;
-    const color = paintedDays[day];
-    return (
-      <TouchableOpacity
-        key={key}
-        onPress={() => togglePaintedDay(day, selectedColor)}
-        style={color ? { backgroundColor: color, borderColor: color } : undefined}
-        className={`${sizeClass} items-center justify-center rounded-sm border ${
-          color ? '' : 'border-gray-700 bg-safakSecondary'
-        }`}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityLabel={`Gün ${day}${color ? ', boyalı' : ''}`}
-      >
-        <Text className={`font-bold ${textClass} ${color ? 'text-white' : 'text-gray-400'}`}>
-          {day}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+  // Hücre boyutu: ekran yatayken yükseklik ve genişliğe sığacak en büyük kare
+  const rows = Math.max(...layout.digits.map((d) => d.rows.length));
+  const cols = layout.digits.reduce((sum, d) => sum + d.rows[0].length, 0);
+  const landscapeH = Math.min(width, height);
+  const landscapeW = Math.max(width, height);
+  const availH = landscapeH - 40 - (layout.extraDays.length ? EXTRA_ROW : 0);
+  const availW = landscapeW - 56 - 64 - 76 - 24 - DIGIT_GAP * (layout.digits.length - 1);
+  const cell = Math.max(12, Math.min(48, Math.floor(Math.min(availH / rows, availW / cols) - GAP)));
 
   return (
-    <View className="relative flex-1 flex-row bg-safakDark">
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Home' as never)}
-        className="absolute left-8 top-6 z-50 h-10 w-10 items-center justify-center rounded-full border border-gray-700 bg-safakSecondary shadow-lg"
-        activeOpacity={0.7}
-        accessibilityLabel="Takvimi kapat"
-        accessibilityRole="button"
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bg, flexDirection: 'row' }}
+      edges={['left', 'right']}
+    >
+      <StatusBar hidden />
+      <View
+        style={{
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingVertical: 20,
+          paddingLeft: 24,
+          paddingRight: 16,
+        }}
       >
-        <X size={24} color="#f8fafc" />
-      </TouchableOpacity>
-
-      <View className="flex-1 items-center justify-center">
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
+        <IconButton
+          label="Takvimi kapat"
+          size={44}
+          onPress={() => navigation.navigate('Home' as never)}
         >
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            bounces={false}
-            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
-          >
-            <View className="w-full flex-row items-center justify-center gap-x-10 px-2 py-4">
-              {layout.digits.map((digit, di) => (
-                <View key={`digit-${di}`} className="flex-col">
-                  {digit.rows.map((row, ri) => (
-                    <View key={`row-${di}-${ri}`} className="flex-row">
-                      {row.map((day, ci) =>
-                        renderCell(day, `c-${di}-${ri}-${ci}`, cell.size, cell.text),
-                      )}
-                    </View>
+          <X size={20} color={colors.text} strokeWidth={2.5} />
+        </IconButton>
+        <Typo
+          variant="label"
+          color="textMuted"
+          style={{
+            width: 160,
+            textAlign: 'center',
+            transform: [{ rotate: '-90deg' }],
+            marginBottom: 60,
+          }}
+        >
+          {paintedCount} / {total} boyandı
+        </Typo>
+      </View>
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: 20,
+          gap: 12,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ flexDirection: 'row', gap: DIGIT_GAP, alignItems: 'flex-start' }}>
+          {layout.digits.map((digit, di) => (
+            <View key={di} style={{ gap: GAP }} accessibilityLabel={`Rakam ${digit.char}`}>
+              {digit.rows.map((row, ri) => (
+                <View key={ri} style={{ flexDirection: 'row', gap: GAP }}>
+                  {row.map((day, ci) => (
+                    <DayCell
+                      key={ci}
+                      day={day}
+                      size={cell}
+                      color={day ? paintedDays[day] : undefined}
+                      isToday={day === todayNumber}
+                      onPress={onPaint}
+                    />
                   ))}
                 </View>
               ))}
             </View>
-          </ScrollView>
-
-          {layout.extraDays.length > 0 && (
-            <View className="mb-6 mt-4 items-center px-4">
-              <Text className="mb-2 text-xs text-gray-500">Ekstra Günler (ceza ve izin)</Text>
-              <View className="max-w-[500px] flex-row flex-wrap justify-center">
-                {layout.extraDays.map((day) =>
-                  renderCell(day, `x-${day}`, 'w-[26px] h-[22px] m-[2px]', 'text-[9px]'),
-                )}
-              </View>
-            </View>
-          )}
-        </ScrollView>
-      </View>
-
-      <View className="w-18 items-center border-l border-gray-800 bg-safakSecondary py-8 shadow-2xl">
-        <View className="mb-6 rounded-full border border-gray-700 bg-safakDark p-2">
-          <Paintbrush size={24} color={selectedColor} />
-        </View>
-        <View className="flex-1 justify-center gap-y-5">
-          {COLORS.map((c) => (
-            <TouchableOpacity
-              key={c}
-              onPress={() => setLastColor(c)}
-              style={{
-                backgroundColor: c,
-                borderWidth: selectedColor === c ? 3 : 0,
-                borderColor: 'white',
-              }}
-              className="h-8 w-8 rounded-full shadow-lg"
-              accessibilityRole="button"
-              accessibilityLabel={`Renk ${c}`}
-              accessibilityState={{ selected: selectedColor === c }}
-            />
           ))}
         </View>
+
+        {layout.extraDays.length > 0 ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+            }}
+          >
+            <Caption upper>Ekstra · ceza ve izin</Caption>
+            <View style={{ flexDirection: 'row', gap: 3, flexWrap: 'wrap' }}>
+              {layout.extraDays.map((day) => (
+                <DayCell
+                  key={day}
+                  day={day}
+                  size={Math.max(cell, 20)}
+                  color={paintedDays[day]}
+                  isToday={day === todayNumber}
+                  onPress={onPaint}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
+      </ScrollView>
+
+      <View style={{ paddingVertical: 20 }}>
+        <ColorPalette value={color} onChange={setLastColor} />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

@@ -17,3 +17,19 @@ Birim testiyle kapsanmayan davranışlar için cihazda (veya simülatörde) yap�
 ## Eski sürümden geçiş
 
 `store.test.ts` → "eski sürümün anahtarlarından veriyi taşır". Cihazda: 1.0 sürümü kurulu ve verisi dolu bir cihaza bu sürümü kur → kurulum ekranı tekrar sorulmamalı, boyalı günler korunmalı.
+
+## Faz 4–5 — Yeni tasarım
+
+Tasarım tuvali: https://claude.ai/artifact/UNuakzbtpzoBxTy4pxzDwG (yalnızca sahibine açık). Her ekranın cihaz ekran görüntüsünü tuvaldeki karşılığıyla yan yana koy.
+
+| Ekran | Kontrol |
+|---|---|
+| Açılış | Siyah zemin, ortada neon güneş logosu; yazı tipi yüklenince hemen kaybolur. |
+| Tanıtım | 3 sayfa: neon → pembe → mor. "Atla" ve "Başla" kurulumu açar. Durum çubuğu koyu. |
+| Kurulum | 5 adım (izin daha önce sorulduysa 4). Ad < 2 harf ve eksik şehirde kırmızı uyarı. Tarih seçici iOS'ta alttan, Android'de diyalog. Terhis önizlemesi tarih değişince güncellenir. |
+| Ana Sayfa | Halka açılışta dolar. Son 81 günde il çipi. Kilometre taşı tamamlanınca bir kez başarı titreşimi. Yüzen sekme çubuğu içeriği örtmez. |
+| Takvim | Yatay açılır, sekme çubuğu gizli. Uzun dönemde 365 hücre tek ekrana sığar. Dokununca boyanır + seçim titreşimi; aynı renkle tekrar dokununca silinir. Bugün beyaz çerçeveli. |
+| Ayarlar | Profil kartı; bildirim anahtarı kapatınca planlı bildirimler silinir, açınca gerekirse izin ister. Sürüm 2.0.0 görünür. |
+| Paylaş | Sarı/Neon seçimi; "Paylaş" 1080×1080 PNG ile sistem paylaşım menüsünü açar. |
+| Erişilebilirlik | VoiceOver/TalkBack: takvim hücreleri "Gün 45, boyalı", sekmeler "Şafak / Takvim / Ayarlar", +/- kontrolleri ayarlanabilir. |
+| Tablet | `supportsTablet: false` — iPad'de iPhone modunda açılır. |

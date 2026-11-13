@@ -2,18 +2,13 @@
   "expo": {
     "name": "Şafak Sayar",
     "slug": "safak-pro",
-    "version": "1.0.0",
-    "orientation": "portrait",
+    "version": "2.0.0",
+    "orientation": "default",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.tabugoapp.safakpro",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -27,7 +22,9 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.tabugoapp.safakpro",
-      "blockedPermissions": ["com.google.android.gms.permission.AD_ID"]
+      "blockedPermissions": [
+        "com.google.android.gms.permission.AD_ID"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -38,7 +35,23 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#10b981"
+          "color": "#C6F432"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-logo.png",
+          "imageWidth": 132,
+          "backgroundColor": "#0B0B0F",
+          "resizeMode": "contain"
+        }
+      ],
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "PORTRAIT_UP"
         }
       ]
     ],
@@ -47,6 +60,7 @@
         "projectId": "c28ab7e6-b8b0-45dd-aea0-4b3f953b4d92"
       }
     },
-    "owner": "tabugoapp"
+    "owner": "tabugoapp",
+    "backgroundColor": "#0B0B0F"
   }
 }
