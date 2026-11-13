@@ -18,6 +18,14 @@ describe('app.json', () => {
     expect(app.ios.infoPlist.CFBundleDisplayName).toBe('Şafak Sayar');
   });
 
+  // 1.x iPad'i destekliyordu; App Store, güncellemenin desteklenen cihazları
+  // azaltmasına izin vermez (ITMS-90101). Yön kilitleri bölünmüş ekranda
+  // çalışmadığı için iPad'de tam ekran zorunlu.
+  it('iPad desteği korunur ve tam ekran açılır', () => {
+    expect(app.ios.supportsTablet).toBe(true);
+    expect(app.ios.requireFullScreen).toBe(true);
+  });
+
   it('Android etiketi Türkçe ad eklentisiyle verilir', () => {
     const plugin = app.plugins.find(
       (p: unknown) => Array.isArray(p) && p[0] === './plugins/withAndroidAppName',
