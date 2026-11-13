@@ -32,7 +32,7 @@ Tasarım tuvali: https://claude.ai/artifact/UNuakzbtpzoBxTy4pxzDwG (yalnızca sa
 | Ayarlar | Profil kartı; bildirim anahtarı kapatınca planlı bildirimler silinir, açınca gerekirse izin ister. Sürüm 2.0.0 görünür. |
 | Paylaş | Sarı/Neon seçimi; "Paylaş" 1080×1080 PNG ile sistem paylaşım menüsünü açar. |
 | Erişilebilirlik | VoiceOver/TalkBack: takvim hücreleri "Gün 45, boyalı", sekmeler "Şafak / Takvim / Ayarlar", +/- kontrolleri ayarlanabilir. |
-| Tablet | iPad desteklenir (1.x iPad destekliyordu, App Store azaltmaya izin vermez) ve tam ekran açılır. iPad'de: Ana Sayfa ortalı, Takvim yatayda tek ekrana sığar, paylaşım kartı en fazla 420 pt. |
+| Tablet | iPad desteklenir (1.x iPad destekliyordu, App Store azaltmaya izin vermez) ve tam ekran açılır. iPad'de kontrol: ekranlar tam genişlikte taşmadan açılıyor, Takvim yatayda tek ekrana sığıyor, paylaşım kartı en fazla 420 pt. |
 
 ## Faz 6 — Gerçek cihazda duman testi
 
