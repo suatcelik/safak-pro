@@ -33,3 +33,16 @@ Tasarım tuvali: https://claude.ai/artifact/UNuakzbtpzoBxTy4pxzDwG (yalnızca sa
 | Paylaş | Sarı/Neon seçimi; "Paylaş" 1080×1080 PNG ile sistem paylaşım menüsünü açar. |
 | Erişilebilirlik | VoiceOver/TalkBack: takvim hücreleri "Gün 45, boyalı", sekmeler "Şafak / Takvim / Ayarlar", +/- kontrolleri ayarlanabilir. |
 | Tablet | `supportsTablet: false` — iPad'de iPhone modunda açılır. |
+
+## Faz 6 — Gerçek cihazda duman testi
+
+Her sürümden önce iOS ve Android'de birer gerçek cihazda (preview build: `eas build --profile preview`):
+
+1. **İlk açılış:** temiz kurulum → koyu açılış ekranı → Tanıtım. İzin penceresi çıkmaz.
+2. **Kurulum:** 5 adımı doldur; bildirim adımında "İzin Ver" → sistem penceresi.
+3. **Sayaç:** Ana Sayfa'da kalan gün, terhis tarihi ve geçen gün Kurulum'daki tarihle tutarlı.
+4. **Takvim boyama:** Takvim yataya döner, birkaç gün boya, uygulamayı kapat-aç → boyalar duruyor.
+5. **Bildirim:** cihaz saatini ertesi gün 07:59'a al → 08:00'de günün sözü gelir.
+6. **Sıfırlama:** Ayarlar → Tüm verileri sıfırla → Tanıtım açılır, planlı bildirim kalmaz.
+7. **Paylaşım:** Paylaş → kart görseli WhatsApp/Instagram'a gider, 1080×1080.
+8. **Güncelleme:** 1.0 sürümü kurulu cihaza bu sürümü kur → veriler korunur.
