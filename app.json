@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Şafak Sayar",
+    "name": "Safak Sayar",
     "slug": "safak-pro",
     "version": "2.0.0",
     "orientation": "default",
@@ -10,7 +10,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.tabugoapp.safakpro",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "Şafak Sayar"
       }
     },
     "android": {
@@ -51,7 +52,13 @@
         }
       ],
       "expo-sharing",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "./plugins/withAndroidAppName",
+        {
+          "name": "Şafak Sayar"
+        }
+      ]
     ],
     "extra": {
       "eas": {
