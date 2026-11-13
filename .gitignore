@@ -44,5 +44,5 @@ yarn-error.*
 .superpowers/
 
 # App Store metadata (kişisel iletişim bilgisi içerir, eas metadata:pull ile üretilir)
-store.config.json
-store/
+/store.config.json
+/store/
