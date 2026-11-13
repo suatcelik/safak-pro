@@ -446,10 +446,11 @@ export default function SetupScreen() {
           mode="date"
           minimumDate={new Date(2020, 0, 1)}
           maximumDate={new Date(2035, 0, 1)}
-          onChange={(event, date) => {
+          onValueChange={(_, date) => {
             setShowDate(false);
-            if (event.type === 'set' && date) update({ startDate: toDateKey(date) });
+            update({ startDate: toDateKey(date) });
           }}
+          onDismiss={() => setShowDate(false)}
         />
       ) : null}
 
@@ -478,7 +479,7 @@ export default function SetupScreen() {
                 themeVariant="light"
                 minimumDate={new Date(2020, 0, 1)}
                 maximumDate={new Date(2035, 0, 1)}
-                onChange={(_, date) => date && update({ startDate: toDateKey(date) })}
+                onValueChange={(_, date) => update({ startDate: toDateKey(date) })}
               />
               <Button label="Tamam" onPress={() => setShowDate(false)} />
             </View>
