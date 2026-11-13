@@ -9,24 +9,22 @@ import { RootStackParamList } from './types';
 // ✅ EKLENDİ
 import PremiumScreen from '../screens/PremiumScreen';
 
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-    return (
-        <Stack.Navigator
-            initialRouteName="Splash"
-            screenOptions={{
-                headerShown: false,
-                animation: 'fade',
-            }}
-        >
-            <Stack.Screen name="Splash" component={SplashScreen} />
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            <Stack.Screen name="Setup" component={SetupScreen} />
-            <Stack.Screen name="MainTabs" component={TabNavigator} />
-            <Stack.Screen name="Premium" component={PremiumScreen} />
-
-        </Stack.Navigator>
-    );
+  return (
+    <Stack.Navigator
+      initialRouteName="Splash"
+      screenOptions={{
+        headerShown: false,
+        animation: 'fade',
+      }}
+    >
+      <Stack.Screen name="Splash" component={SplashScreen} />
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      <Stack.Screen name="Setup" component={SetupScreen} />
+      <Stack.Screen name="MainTabs" component={TabNavigator} />
+      <Stack.Screen name="Premium" component={PremiumScreen} />
+    </Stack.Navigator>
+  );
 }
