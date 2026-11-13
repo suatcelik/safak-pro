@@ -2,39 +2,72 @@ import React from 'react';
 import Svg, { Circle, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { colors, fonts } from '../../theme/tokens';
 
-/** Logo: ufuktan doğan güneş */
-export function SunriseLogo({
+/**
+ * Logo: kart destesi — doğan güneşli neon kart, arkasında yelpaze gibi iki kart.
+ * Uygulama ikonu ve açılış ekranıyla aynı şekiller (assets/icon-source.svg).
+ * Renkli zeminlerde arka kart zeminle aynı renge düşerse `backLeft`/`backRight` değiştirilir.
+ */
+export function DeckLogo({
   size = 132,
-  bg = colors.accent,
-  fg = colors.ink,
-  rays = true,
+  front = colors.accent,
+  backLeft = colors.pink,
+  backRight = colors.yellow,
+  ink = colors.ink,
 }: {
   size?: number;
-  bg?: string;
-  fg?: string;
-  rays?: boolean;
+  front?: string;
+  backLeft?: string;
+  backRight?: string;
+  ink?: string;
 }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 132 132" accessibilityLabel="Şafak Sayar logosu">
-      <Circle cx={66} cy={66} r={66} fill={bg} />
-      <Path d="M30 80 A36 36 0 0 1 102 80 Z" fill={fg} />
-      <Rect x={22} y={86} width={88} height={7} rx={3.5} fill={fg} />
-      <Rect x={38} y={99} width={56} height={7} rx={3.5} fill={fg} />
-      {rays ? (
-        <>
-          <Rect x={63} y={22} width={6} height={16} rx={3} fill={fg} />
-          <Rect
-            x={30}
-            y={38}
-            width={6}
-            height={14}
-            rx={3}
-            fill={fg}
-            transform="rotate(-45 33 45)"
-          />
-          <Rect x={96} y={38} width={6} height={14} rx={3} fill={fg} transform="rotate(45 99 45)" />
-        </>
-      ) : null}
+    <Svg
+      width={size}
+      height={size}
+      viewBox="92 120 840 840"
+      accessibilityLabel="Şafak Sayar logosu"
+    >
+      <Rect
+        x={282}
+        y={250}
+        width={460}
+        height={560}
+        rx={104}
+        fill={backLeft}
+        transform="rotate(-17 512 940)"
+      />
+      <Rect
+        x={282}
+        y={250}
+        width={460}
+        height={560}
+        rx={104}
+        fill={backRight}
+        transform="rotate(15 512 940)"
+      />
+      <Rect x={262} y={222} width={500} height={580} rx={110} fill={front} />
+      <Path d="M362 590 A150 150 0 0 1 662 590 Z" fill={ink} />
+      <Rect x={332} y={622} width={360} height={40} rx={20} fill={ink} />
+      <Rect x={402} y={690} width={220} height={40} rx={20} fill={ink} />
+      <Rect x={496} y={350} width={32} height={76} rx={16} fill={ink} />
+      <Rect
+        x={496}
+        y={350}
+        width={32}
+        height={76}
+        rx={16}
+        fill={ink}
+        transform="rotate(-45 512 590)"
+      />
+      <Rect
+        x={496}
+        y={350}
+        width={32}
+        height={76}
+        rx={16}
+        fill={ink}
+        transform="rotate(45 512 590)"
+      />
     </Svg>
   );
 }

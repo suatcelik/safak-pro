@@ -5,7 +5,7 @@ import { tr } from 'date-fns/locale';
 import { CITIES } from '../../domain/cities';
 import type { ServiceStats } from '../../domain/service';
 import { colors, radius } from '../../theme/tokens';
-import { SunriseLogo } from '../../assets/illustrations';
+import { DeckLogo } from '../../assets/illustrations';
 import { ProgressBar, Typo } from '../ui';
 
 export type ShareVariant = 'yellow' | 'accent';
@@ -52,7 +52,7 @@ export const ShareCard = forwardRef<View, Props>(function ShareCard(
             <Typo variant="subheading" color="ink" size={20 * k}>
               {name ? `${name}'in şafağı` : 'Şafağım'}
             </Typo>
-            <SunriseLogo size={48 * k} bg={colors.ink} fg={colors.yellow} rays={false} />
+            <DeckLogo size={56 * k} backRight={colors.ink} />
           </>
         ) : (
           <>

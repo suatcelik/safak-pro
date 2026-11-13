@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { Paintbrush } from 'lucide-react-native';
 import { colors, paintPalette } from '../../theme/tokens';
 import { Card, Typo } from '../ui';
-import { SunriseLogo } from '../../assets/illustrations';
+import { DeckLogo } from '../../assets/illustrations';
 
 /** 1 — Şafağını say: eğik sayaç kartları */
 export function CountdownArt() {
@@ -31,7 +31,7 @@ export function CountdownArt() {
           <Typo variant="label" color="textMuted">
             Şafak
           </Typo>
-          <SunriseLogo size={28} rays={false} />
+          <DeckLogo size={32} />
         </View>
         <View>
           <Typo variant="hero" color="accent" size={96} style={{ letterSpacing: -4 }}>
@@ -165,7 +165,7 @@ export function MilestonesArt() {
           <Typo variant="label" color="textMuted">
             Şafak 0
           </Typo>
-          <SunriseLogo size={32} rays={false} />
+          <DeckLogo size={36} />
         </View>
         <Typo variant="heading" color="accent" size={28}>
           Doğan Güneş
