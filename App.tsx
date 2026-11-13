@@ -1,4 +1,3 @@
-import './global.css';
 import React, { useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';

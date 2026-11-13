@@ -2,7 +2,7 @@
 
 Askerlik süresini gün gün sayan, takvimde günleri boyamaya ve kilometre taşlarını takip etmeye yarayan mobil uygulama. Reklam yok, satın alma yok, veri toplamıyor: her şey cihazda kalır.
 
-**Teknoloji:** Expo SDK 58 · React Native 0.88 · TypeScript · NativeWind (Tailwind) · Zustand · date-fns
+**Teknoloji:** Expo SDK 58 · React Native 0.88 · TypeScript · Zustand · date-fns
 
 ## Kurulum
 
@@ -29,7 +29,7 @@ Node 22.13+ gerekir. Tüm native modüller Expo Go (SDK 58) içinde hazır: `npm
 src/
   domain/        Saf iş mantığı (servis hesabı, takvim düzenleri) — UI'dan bağımsız, testli
   store/         Zustand store (AsyncStorage'a kalıcı)
-  theme/         Tasarım token'ları (renk, yazı, aralık, köşe) — tailwind.config.js buradan okur
+  theme/         Tasarım token'ları (renk, yazı, aralık, köşe)
   components/
     ui/          Genel UI bileşenleri (Button, Card, Screen…)
     <özellik>/   Özelliğe ait bileşenler

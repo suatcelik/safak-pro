@@ -1,6 +1,6 @@
 /**
  * Şafak Sayar tasarım token'ları — uygulamadaki tek renk/yazı/aralık kaynağı.
- * tailwind.config.js bu dosyayı okur; ekran ve bileşenlerde ham hex kullanılmaz.
+ * Ekran ve bileşenler stillerini buradan alır; başka yerde ham hex kullanılmaz.
  */
 
 export const colors = {

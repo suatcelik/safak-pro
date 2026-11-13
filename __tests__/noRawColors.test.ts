@@ -26,10 +26,4 @@ describe('tasarım token kuralı', () => {
     }
     expect(offenders).toEqual([]);
   });
-
-  it('tailwind renkleri token dosyasından gelir', () => {
-    const config = require('../tailwind.config.js');
-    const { colors } = require('../src/theme/tokens');
-    expect(config.theme.extend.colors).toEqual(colors);
-  });
 });
