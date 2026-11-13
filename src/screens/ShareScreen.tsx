@@ -9,7 +9,7 @@ import { computeService } from '../domain/service';
 import { useToday } from '../hooks/useToday';
 import { colors } from '../theme/tokens';
 import { Body, Button, Chip, Heading, IconButton, Screen, StateView } from '../components/ui';
-import { ShareCard, ShareVariant } from '../components/share/ShareCard';
+import { ShareCard, ShareCardRef, ShareVariant } from '../components/share/ShareCard';
 
 const EXPORT_PX = 1080;
 
@@ -20,7 +20,7 @@ export default function ShareScreen() {
   const { width } = useWindowDimensions();
   const [variant, setVariant] = useState<ShareVariant>('yellow');
   const [busy, setBusy] = useState(false);
-  const cardRef = useRef<View>(null);
+  const cardRef = useRef<ShareCardRef>(null);
   const stats = useMemo(() => (setup ? computeService(setup, today) : null), [setup, today]);
 
   if (!setup || !stats) {

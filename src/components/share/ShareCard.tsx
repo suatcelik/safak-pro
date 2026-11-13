@@ -22,7 +22,9 @@ interface Props {
  * Görsel olarak paylaşılan kare kart. Tasarım 540 birimlik kareye göre
  * çizildi; `size` ile ölçeklenir (paylaşımda 1080 piksele çekilir).
  */
-export const ShareCard = forwardRef<View, Props>(function ShareCard(
+export type ShareCardRef = React.ComponentRef<typeof View>;
+
+export const ShareCard = forwardRef<ShareCardRef, Props>(function ShareCard(
   { stats, name, city, variant, size },
   ref,
 ) {

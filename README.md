@@ -2,7 +2,7 @@
 
 Askerlik süresini gün gün sayan, takvimde günleri boyamaya ve kilometre taşlarını takip etmeye yarayan mobil uygulama. Reklam yok, satın alma yok, veri toplamıyor: her şey cihazda kalır.
 
-**Teknoloji:** Expo SDK 54 · React Native 0.81 · TypeScript · NativeWind (Tailwind) · Zustand · date-fns
+**Teknoloji:** Expo SDK 58 · React Native 0.88 · TypeScript · NativeWind (Tailwind) · Zustand · date-fns
 
 ## Kurulum
 
@@ -10,7 +10,7 @@ Askerlik süresini gün gün sayan, takvimde günleri boyamaya ve kilometre taş
 npm install
 ```
 
-Node 20+ önerilir. Uygulama native modüller kullandığı için Expo Go yerine development build ile çalıştırılır.
+Node 22.13+ gerekir. Tüm native modüller Expo Go (SDK 58) içinde hazır: `npm start` ile açıp Expo Go ile tara. İkon ve açılış ekranı yalnızca derlenmiş sürümde (`eas build`) görünür.
 
 ## Çalıştırma
 

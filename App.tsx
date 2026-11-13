@@ -1,5 +1,5 @@
 import './global.css';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -28,14 +28,12 @@ const navTheme = {
   colors: { ...DarkTheme.colors, background: colors.bg, card: colors.bg, primary: colors.accent },
 };
 
+/** Kalıcı store AsyncStorage'dan yüklendi mi? */
 function useHydrated() {
-  const [hydrated, setHydrated] = useState(() => useStore.persist.hasHydrated());
-  useEffect(() => {
-    const unsub = useStore.persist.onFinishHydration(() => setHydrated(true));
-    setHydrated(useStore.persist.hasHydrated());
-    return unsub;
-  }, []);
-  return hydrated;
+  return useSyncExternalStore(
+    (onChange) => useStore.persist.onFinishHydration(onChange),
+    () => useStore.persist.hasHydrated(),
+  );
 }
 
 export default function App() {
