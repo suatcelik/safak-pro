@@ -47,6 +47,7 @@ import {
   Typo,
 } from '../components/ui';
 import { CityPicker } from '../components/setup/CityPicker';
+import { NotificationPreview } from '../components/setup/NotificationPreview';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Setup'>;
 
@@ -155,6 +156,8 @@ export default function SetupScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {step === 'notify' ? <NotificationPreview /> : null}
+
           <View style={{ gap: 12 }}>
             {step === 'extras' ? (
               <View

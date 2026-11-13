@@ -9,10 +9,11 @@ export interface PlannedNotification {
 }
 
 const QUOTE_DAYS = 30;
-const QUOTE_HOUR = 8;
-const MILESTONE_HOUR = 9;
+export const QUOTE_HOUR = 8;
+export const MILESTONE_HOUR = 9;
+export const QUOTE_TITLE = 'Günün Sözü 🇹🇷';
 
-const MILESTONES = [
+export const MILESTONE_NOTIFICATIONS = [
   {
     daysLeft: 100,
     title: 'Dalya! 💯',
@@ -43,10 +44,10 @@ export function buildNotificationPlan(
   for (let i = 1; i <= QUOTE_DAYS; i++) {
     const date = at(addDays(now, i), QUOTE_HOUR);
     if (date > at(end, 23)) break;
-    plan.push({ kind: 'quote', date, title: 'Günün Sözü 🇹🇷', body: pickQuote() });
+    plan.push({ kind: 'quote', date, title: QUOTE_TITLE, body: pickQuote() });
   }
 
-  for (const m of MILESTONES) {
+  for (const m of MILESTONE_NOTIFICATIONS) {
     const date = at(addDays(end, -m.daysLeft), MILESTONE_HOUR);
     if (date > now) plan.push({ kind: 'milestone', date, title: m.title, body: m.body });
   }
