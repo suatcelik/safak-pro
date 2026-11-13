@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Şafak Sayar Pro",
+    "name": "Şafak Sayar",
     "slug": "safak-pro",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,8 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.tabugoapp.safakpro",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSUserTrackingUsageDescription": "Sana daha alakalı reklamlar gösterebilmek için izin istiyoruz. İzin vermezsen reklamlar görünmeye devam eder ancak kişiselleştirilmez."
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -27,7 +26,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.tabugoapp.safakpro"
+      "package": "com.tabugoapp.safakpro",
+      "blockedPermissions": ["com.google.android.gms.permission.AD_ID"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -40,21 +40,7 @@
           "icon": "./assets/icon.png",
           "color": "#10b981"
         }
-      ],
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-7780845735147349~4471114770",
-          "iosAppId": "ca-app-pub-7780845735147349~8723250788"
-        }
-      ],
-      [
-        "expo-tracking-transparency",
-        {
-          "userTrackingPermission": "Uygulamanın ücretsiz kalabilmesi için size daha uygun reklamlar göstermemize izin verir misiniz?"
-        }
-      ],
-      "react-native-iap"
+      ]
     ],
     "extra": {
       "eas": {

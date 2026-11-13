@@ -26,7 +26,6 @@ import { differenceInDays, addDays, parseISO, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { getRandomQuote } from '../utils/quotes';
 import { CITY_PLATES } from '../utils/cityPlates';
-import AdBanner from '../components/AdBanner';
 
 // --- Sadece bu bileşen saniyede bir render edilecek ---
 const DailyProgressCircle = ({ remaining }: { remaining: number }) => {
@@ -279,7 +278,7 @@ export default function HomeScreen() {
     <View className="flex-1 bg-safakDark">
       <ScrollView
         className="flex-1 bg-safakDark"
-        contentContainerStyle={{ padding: 24, paddingBottom: 170 }}
+        contentContainerStyle={{ padding: 24, paddingBottom: 32 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />
         }
@@ -441,11 +440,6 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
       </ScrollView>
-
-      {/* Sabit Banner */}
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
-        <AdBanner />
-      </View>
     </View>
   );
 }

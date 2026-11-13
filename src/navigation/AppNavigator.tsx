@@ -6,9 +6,6 @@ import SetupScreen from '../screens/SetupScreen';
 import TabNavigator from './TabNavigator';
 import { RootStackParamList } from './types';
 
-// ✅ EKLENDİ
-import PremiumScreen from '../screens/PremiumScreen';
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
@@ -24,7 +21,6 @@ export default function AppNavigator() {
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Setup" component={SetupScreen} />
       <Stack.Screen name="MainTabs" component={TabNavigator} />
-      <Stack.Screen name="Premium" component={PremiumScreen} />
     </Stack.Navigator>
   );
 }

@@ -3,8 +3,6 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Setup: undefined;
   MainTabs: undefined;
-  Premium: undefined;
-  LeaveCalculator: undefined;
 };
 
 export type MainTabParamList = {
