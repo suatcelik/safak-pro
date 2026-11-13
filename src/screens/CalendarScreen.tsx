@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
+import { setStatusBarHidden } from 'expo-status-bar';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { X } from 'lucide-react-native';
 import { differenceInCalendarDays } from 'date-fns';
@@ -34,7 +34,10 @@ export default function CalendarScreen() {
   useFocusEffect(
     useCallback(() => {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
+      // Sekme ekranları açık kaldığı için durum çubuğunu odakla birlikte yönet
+      setStatusBarHidden(true, 'fade');
       return () => {
+        setStatusBarHidden(false, 'fade');
         ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
       };
     }, []),
@@ -85,7 +88,6 @@ export default function CalendarScreen() {
       style={{ flex: 1, backgroundColor: colors.bg, flexDirection: 'row' }}
       edges={['left', 'right']}
     >
-      <StatusBar hidden />
       <View
         style={{
           justifyContent: 'space-between',
