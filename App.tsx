@@ -1,81 +1,80 @@
-import "./global.css";
-import React, { useEffect } from "react";
-import { AppState, Platform } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { NavigationContainer } from "@react-navigation/native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import AppNavigator from "./src/navigation/AppNavigator";
-import { requestNotificationPermissions } from "./src/utils/notifications";
+import React, { useEffect, useSyncExternalStore } from 'react';
+import { AppState } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
+import * as ScreenOrientation from 'expo-screen-orientation';
+import { DarkTheme, NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  useFonts,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
+import AppNavigator from './src/navigation/AppNavigator';
+import { useStore } from './src/store/useStore';
+import { cancelAllNotifications, rescheduleNotifications } from './src/services/notifications';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { colors } from './src/theme/tokens';
 
-// Ads / ATT
-import { initAds } from "./src/services/ads";
-import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
+SplashScreen.preventAutoHideAsync().catch(() => {});
+// Uygulama dikey çalışır; yalnızca Takvim kendini yataya kilitler.
+ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
 
-// IAP
-import { initIAP, restorePurchases, endIAP } from "./src/services/iapService";
+const navTheme = {
+  ...DarkTheme,
+  colors: { ...DarkTheme.colors, background: colors.bg, card: colors.bg, primary: colors.accent },
+};
 
-// Local premium hydrate
-import { getPremiumLocal } from "./src/utils/storage";
-import { useStore } from "./src/store/useStore";
+/** Kalıcı store AsyncStorage'dan yüklendi mi? */
+function useHydrated() {
+  return useSyncExternalStore(
+    (onChange) => useStore.persist.onFinishHydration(onChange),
+    () => useStore.persist.hasHydrated(),
+  );
+}
 
 export default function App() {
-  const setIsPremium = useStore((s) => s.setIsPremium);
+  const hydrated = useHydrated();
+  const [fontsLoaded, fontError] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+  const ready = hydrated && (fontsLoaded || !!fontError);
+  const setup = useStore((s) => s.setup);
+  const notificationsEnabled = useStore((s) => s.notificationsEnabled);
 
   useEffect(() => {
-    // 1) Bildirim izinleri
-    requestNotificationPermissions();
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
 
-    // 2) Ads + ATT + IAP başlangıç
-    (async () => {
-      try {
-        // iOS ATT (hata fırlatabilir, sessizce geçilebilir)
-        if (Platform.OS === "ios") {
-          try {
-            await requestTrackingPermissionsAsync();
-          } catch (e: any) {
-            console.log("[ATT] Permission request skipped:", e?.message || e);
-          }
-        }
-
-        // AdMob init
-        await initAds();
-
-        // Local premium hızlı yükle (app açılır açılmaz reklamı saklamak için)
-        try {
-          const localPremium = await getPremiumLocal();
-          if (localPremium) setIsPremium(true);
-        } catch (e: any) {
-          console.log("[Premium] Local premium load error:", e?.message || e);
-        }
-
-        // IAP init + restore (asıl doğrulama)
-        await initIAP();
-        await restorePurchases();
-      } catch (e) {
-        console.log("[App] Init error:", e);
-      }
-    })();
-
-    // H-4: Uygulama arka plana geçince IAP bağlantısını kapat
-    const appStateSub = AppState.addEventListener("change", (nextState) => {
-      if (nextState === "background" || nextState === "inactive") {
-        endIAP().catch((e: any) =>
-          console.log("[IAP] endIAP on background error:", e?.message || e)
-        );
-      }
+  // Günlük söz penceresini her açılışta ve uygulama öne geldiğinde 30 gün ileri taşı
+  useEffect(() => {
+    if (!hydrated || !setup) return;
+    if (!notificationsEnabled) {
+      cancelAllNotifications().catch(() => {});
+      return;
+    }
+    rescheduleNotifications(setup);
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') rescheduleNotifications(setup);
     });
+    return () => sub.remove();
+  }, [hydrated, setup, notificationsEnabled]);
 
-    return () => {
-      appStateSub.remove();
-    };
-  }, [setIsPremium]);
+  if (!ready) return null;
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar style="light" />
-        <AppNavigator />
-      </NavigationContainer>
+      <ErrorBoundary>
+        <NavigationContainer theme={navTheme}>
+          <AppNavigator />
+        </NavigationContainer>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }

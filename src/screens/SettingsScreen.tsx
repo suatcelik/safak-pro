@@ -1,163 +1,177 @@
-import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, Linking, ScrollView, Switch } from 'react-native';
-import { UserCog, Trash2, CalendarDays, ShieldCheck, ExternalLink, Star, Palmtree, Moon, Sun } from 'lucide-react-native';
+import React from 'react';
+import { Alert, Linking, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { clearAllData, getThemeLocal, setThemeLocal } from '../utils/storage';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Constants from 'expo-constants';
+import { Bell, Info, PencilLine, ShieldCheck, Trash2 } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/types';
-import AdBanner from '../components/AdBanner';
 import { useStore } from '../store/useStore';
+import {
+  cancelAllNotifications,
+  getNotificationPermission,
+  requestNotificationPermission,
+  rescheduleNotifications,
+} from '../services/notifications';
+import { colors } from '../theme/tokens';
+import { Caption, Card, Heading, ListGroup, ListRow, Screen, Toggle, Typo } from '../components/ui';
+import { TAB_BAR_SPACE } from '../navigation/FloatingTabBar';
 
-type SettingsNavProp = NativeStackNavigationProp<RootStackParamList>;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+const PRIVACY_POLICY_URL = 'https://suatcelik.github.io/-afak-Sayar-privacy-policy/';
+
+const TYPE_LABEL = {
+  short: 'Kısa dönem',
+  long: 'Uzun dönem',
+  paid: 'Bedelli',
+  officer: 'Yedek subay',
+};
 
 export default function SettingsScreen() {
-    const navigation = useNavigation<SettingsNavProp>();
-    const isPremium = useStore((state) => state.isPremium);
-    const theme = useStore((state) => state.theme);
-    const setTheme = useStore((state) => state.setTheme);
+  const navigation = useNavigation<Nav>();
+  const setup = useStore((s) => s.setup);
+  const resetStore = useStore((s) => s.reset);
+  const notificationsEnabled = useStore((s) => s.notificationsEnabled);
+  const setNotificationsEnabled = useStore((s) => s.setNotificationsEnabled);
+  const version = Constants.expoConfig?.version ?? '';
 
-    const PRIVACY_POLICY_URL = 'https://suatcelik.github.io/-afak-Sayar-privacy-policy/';
+  const toggleNotifications = async (next: boolean) => {
+    if (!next) {
+      setNotificationsEnabled(false);
+      await cancelAllNotifications().catch(() => {});
+      return;
+    }
+    let status = await getNotificationPermission();
+    if (status === 'undetermined')
+      status = (await requestNotificationPermission()) ? 'granted' : 'denied';
+    if (status !== 'granted') {
+      Alert.alert(
+        'Bildirim izni kapalı',
+        'Bildirimleri açmak için telefonunun ayarlarından Şafak Sayar için izin ver.',
+        [
+          { text: 'Vazgeç', style: 'cancel' },
+          { text: 'Ayarları aç', onPress: () => Linking.openSettings() },
+        ],
+      );
+      return;
+    }
+    setNotificationsEnabled(true);
+    if (setup) await rescheduleNotifications(setup);
+  };
 
-    // Tema tercihini AsyncStorage'dan yükle
-    useEffect(() => {
-        getThemeLocal().then((saved) => setTheme(saved));
-    }, []);
+  const openPrivacy = async () => {
+    try {
+      await Linking.openURL(PRIVACY_POLICY_URL);
+    } catch {
+      Alert.alert('Hata', 'Gizlilik politikası şu an açılamıyor.');
+    }
+  };
 
-    const handleOpenPrivacyPolicy = async () => {
-        try {
-            const supported = await Linking.canOpenURL(PRIVACY_POLICY_URL);
-            if (supported) {
-                await Linking.openURL(PRIVACY_POLICY_URL);
-            } else {
-                Alert.alert('Hata', 'Gizlilik politikası sayfası şu an açılamıyor.');
-            }
-        } catch (error) {
-            Alert.alert('Hata', 'Bağlantı açılırken bir sorun oluştu.');
-        }
-    };
-
-    const handleReset = () => {
-        Alert.alert('Sıfırla', 'Tüm şafak ve sülüs bilgilerin silinecek. Emin misin?', [
-            { text: 'İptal', style: 'cancel' },
-            {
-                text: 'Sil ve Sıfırla',
-                style: 'destructive',
-                onPress: async () => {
-                    await clearAllData();
-                    navigation.replace('Splash');
-                },
-            },
-        ]);
-    };
-
-    const handleRemoveAdsPress = () => {
-        if (isPremium) {
-            Alert.alert('Premium Aktif', 'Reklamlar zaten kaldırılmış. ✅');
-            return;
-        }
-        navigation.navigate('Premium');
-    };
-
-
-
-    return (
-        <View className="flex-1 bg-safakDark">
-            <ScrollView
-                className="flex-1 bg-safakDark"
-                contentContainerStyle={{ paddingBottom: 170 }}
-            >
-                <View className="p-6">
-                    {/* Başlık */}
-                    <View className="mt-12 flex-row items-center mb-10">
-                        <UserCog size={32} color="#10b981" />
-                        <Text className="text-white text-3xl font-bold ml-3">Ayarlar</Text>
-                    </View>
-
-                    {/* Hesap & Veri */}
-                    <Text className="text-gray-400 mb-4 px-2 tracking-wide text-sm font-semibold uppercase">
-                        Hesap & Veri
-                    </Text>
-
-                    <View className="bg-safakSecondary rounded-2xl border border-gray-700 overflow-hidden mb-8">
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between p-5 border-b border-gray-700"
-                            onPress={() => navigation.navigate('Setup')}
-                            accessibilityLabel="Askerlik bilgilerini güncelle"
-                            accessibilityRole="button"
-                        >
-                            <View className="flex-row items-center">
-                                <CalendarDays size={24} color="#3b82f6" />
-                                <Text className="text-white text-lg font-medium ml-4">Bilgileri Güncelle</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between p-5"
-                            onPress={handleReset}
-                            accessibilityLabel="Tüm verileri sıfırla"
-                            accessibilityRole="button"
-                        >
-                            <View className="flex-row items-center">
-                                <Trash2 size={24} color="#ef4444" />
-                                <Text className="text-red-400 text-lg font-medium ml-4">Tüm Verileri Sıfırla</Text>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Uygulama */}
-                    <Text className="text-gray-400 mb-4 px-2 tracking-wide text-sm font-semibold uppercase">Uygulama</Text>
-
-                    <View className="bg-safakSecondary rounded-2xl border border-gray-700 overflow-hidden">
-                        {/* Premium / Reklam kaldır */}
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between p-5 border-b border-gray-700"
-                            onPress={handleRemoveAdsPress}
-                            accessibilityLabel={isPremium ? 'Premium aktif' : 'Reklamları kaldır'}
-                            accessibilityRole="button"
-                        >
-                            <View className="flex-row items-center">
-                                <Star size={24} color={isPremium ? '#10b981' : '#f59e0b'} />
-                                <View className="ml-4">
-                                    <Text className="text-white text-lg font-medium">
-                                        {isPremium ? 'Premium Aktif' : 'Reklamları Kaldır'}
-                                    </Text>
-                                    <Text className="text-gray-400 text-xs mt-0.5">
-                                        {isPremium ? 'Reklamsız kullanım açık ✅' : 'Tek seferlik satın alma'}
-                                    </Text>
-                                </View>
-                            </View>
-                            <Text className={`text-sm font-bold ${isPremium ? 'text-emerald-400' : 'text-gray-400'}`}>
-                                {isPremium ? '✅' : '>'}
-                            </Text>
-                        </TouchableOpacity>
-
-
-                        {/* Gizlilik Politikası */}
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between p-5"
-                            onPress={handleOpenPrivacyPolicy}
-                            accessibilityLabel="Gizlilik politikasını aç"
-                            accessibilityRole="link"
-                        >
-                            <View className="flex-row items-center">
-                                <ShieldCheck size={24} color="#10b981" />
-                                <Text className="text-white text-lg font-medium ml-4">Gizlilik Politikası</Text>
-                            </View>
-                            <ExternalLink size={20} color="#64748b" />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Versiyon */}
-                    <View className="mt-12 items-center mb-10">
-                        <Text className="text-gray-600 text-sm italic">Şafak Sayar v1.0.0</Text>
-                    </View>
-                </View>
-            </ScrollView>
-
-            {/* Sabit Banner */}
-            <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
-                <AdBanner />
-            </View>
-        </View>
+  const handleReset = () => {
+    Alert.alert(
+      'Tüm veriler silinsin mi?',
+      'Şafak bilgilerin, boyadığın günler ve bildirimler silinecek.',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sil ve sıfırla',
+          style: 'destructive',
+          onPress: async () => {
+            await cancelAllNotifications().catch(() => {});
+            resetStore();
+            const root = navigation.getParent<Nav>() ?? navigation;
+            root.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+          },
+        },
+      ],
     );
+  };
+
+  const initial = setup?.userName?.trim().charAt(0).toLocaleUpperCase('tr') || 'Ş';
+
+  return (
+    <Screen scroll edges={['top']} bottomInset={TAB_BAR_SPACE} contentStyle={{ gap: 20 }}>
+      <Heading>Ayarlar</Heading>
+
+      {setup ? (
+        <Card tone="accent" style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 999,
+              backgroundColor: colors.ink,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typo variant="heading" color="accent" size={22}>
+              {initial}
+            </Typo>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Typo variant="subheading" color="ink" size={20} numberOfLines={1}>
+              {setup.userName}
+            </Typo>
+            <Typo variant="caption" color="inkMuted" size={14} numberOfLines={1}>
+              {TYPE_LABEL[setup.militaryType]} · {setup.hometown} → {setup.militaryCity}
+            </Typo>
+          </View>
+        </Card>
+      ) : null}
+
+      <ListGroup>
+        <ListRow
+          title="Bilgileri güncelle"
+          iconTone="blue"
+          icon={<PencilLine size={20} color={colors.ink} strokeWidth={2.2} />}
+          onPress={() => navigation.navigate('Setup')}
+          divider
+        />
+        <ListRow
+          title="Bildirimler"
+          iconTone="yellow"
+          icon={<Bell size={20} color={colors.ink} strokeWidth={2.2} />}
+          right={
+            <Toggle
+              label="Bildirimler"
+              value={notificationsEnabled}
+              onChange={toggleNotifications}
+            />
+          }
+        />
+      </ListGroup>
+
+      <ListGroup>
+        <ListRow
+          title="Gizlilik politikası"
+          iconTone="purple"
+          icon={<ShieldCheck size={20} color={colors.ink} strokeWidth={2.2} />}
+          onPress={openPrivacy}
+          accessory="external"
+          accessibilityRole="link"
+          divider
+        />
+        <ListRow
+          title="Hakkında"
+          iconTone="white"
+          icon={<Info size={20} color={colors.ink} strokeWidth={2.2} />}
+          right={<Caption>Sürüm {version}</Caption>}
+        />
+      </ListGroup>
+
+      <ListGroup danger>
+        <ListRow
+          title="Tüm verileri sıfırla"
+          iconTone="danger"
+          icon={<Trash2 size={20} color={colors.ink} strokeWidth={2.2} />}
+          onPress={handleReset}
+          accessory="none"
+          danger
+        />
+      </ListGroup>
+
+      <Caption align="center">Reklam yok · Veri toplanmaz · Her şey telefonunda</Caption>
+    </Screen>
+  );
 }

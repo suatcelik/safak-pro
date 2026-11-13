@@ -1,33 +1,28 @@
 {
   "expo": {
-    "name": "Şafak Sayar Pro",
+    "name": "Safak Sayar",
     "slug": "safak-pro",
-    "version": "1.0.0",
-    "orientation": "portrait",
+    "version": "2.0.0",
+    "orientation": "default",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tabugoapp.safakpro",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSUserTrackingUsageDescription": "Sana daha alakalı reklamlar gösterebilmek için izin istiyoruz. İzin vermezsen reklamlar görünmeye devam eder ancak kişiselleştirilmez."
-      }
+        "CFBundleDisplayName": "Şafak Sayar"
+      },
+      "requireFullScreen": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0B0B0F"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.tabugoapp.safakpro"
+      "package": "com.tabugoapp.safakpro",
+      "blockedPermissions": ["com.google.android.gms.permission.AD_ID"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -38,29 +33,40 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#10b981"
+          "color": "#C6F432"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-logo.png",
+          "imageWidth": 240,
+          "backgroundColor": "#0B0B0F",
+          "resizeMode": "contain"
         }
       ],
       [
-        "react-native-google-mobile-ads",
+        "expo-screen-orientation",
         {
-          "androidAppId": "ca-app-pub-7780845735147349~4471114770",
-          "iosAppId": "ca-app-pub-7780845735147349~8723250788"
+          "initialOrientation": "PORTRAIT_UP"
         }
       ],
+      "expo-sharing",
+      "expo-status-bar",
       [
-        "expo-tracking-transparency",
+        "./plugins/withAndroidAppName",
         {
-          "userTrackingPermission": "Uygulamanın ücretsiz kalabilmesi için size daha uygun reklamlar göstermemize izin verir misiniz?"
+          "name": "Şafak Sayar"
         }
-      ],
-      "react-native-iap"
+      ]
     ],
     "extra": {
       "eas": {
         "projectId": "c28ab7e6-b8b0-45dd-aea0-4b3f953b4d92"
       }
     },
-    "owner": "tabugoapp"
+    "owner": "tabugoapp",
+    "backgroundColor": "#0B0B0F"
   }
 }

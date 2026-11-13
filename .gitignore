@@ -39,3 +39,10 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# agent scratch
+.superpowers/
+
+# App Store metadata (kişisel iletişim bilgisi içerir, eas metadata:pull ile üretilir)
+/store.config.json
+/store/
