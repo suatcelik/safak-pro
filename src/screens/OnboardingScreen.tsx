@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Calendar, Target, Flag } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { setFirstLaunch } from '../utils/storage';
+import { useStore } from '../store/useStore';
 
 type OnboardingNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
-
-const { width } = Dimensions.get('window');
 
 const slides = [
   {
@@ -34,18 +32,19 @@ const slides = [
 export default function OnboardingScreen() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const navigation = useNavigation<OnboardingNavigationProp>();
+  const completeOnboarding = useStore((s) => s.completeOnboarding);
 
-  const nextSlide = async () => {
+  const nextSlide = () => {
     if (currentSlideIndex < slides.length - 1) {
       setCurrentSlideIndex(currentSlideIndex + 1);
     } else {
-      await setFirstLaunch(false); // Onboarding tamamlandı
+      completeOnboarding();
       navigation.replace('Setup');
     }
   };
 
-  const skipSlide = async () => {
-    await setFirstLaunch(false);
+  const skipSlide = () => {
+    completeOnboarding();
     navigation.replace('Setup');
   };
 

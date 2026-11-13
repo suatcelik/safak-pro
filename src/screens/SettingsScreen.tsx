@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Alert, Linking, ScrollView } from 'react-native';
 import { UserCog, Trash2, CalendarDays, ShieldCheck, ExternalLink } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { clearAllData } from '../utils/storage';
+import { useStore } from '../store/useStore';
+import { cancelAllNotifications } from '../services/notifications';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 
@@ -12,6 +13,7 @@ const PRIVACY_POLICY_URL = 'https://suatcelik.github.io/-afak-Sayar-privacy-poli
 
 export default function SettingsScreen() {
   const navigation = useNavigation<SettingsNavProp>();
+  const resetStore = useStore((s) => s.reset);
 
   const handleOpenPrivacyPolicy = async () => {
     try {
@@ -33,8 +35,10 @@ export default function SettingsScreen() {
         text: 'Sil ve Sıfırla',
         style: 'destructive',
         onPress: async () => {
-          await clearAllData();
-          navigation.replace('Splash');
+          await cancelAllNotifications().catch(() => {});
+          resetStore();
+          const root = navigation.getParent<SettingsNavProp>() ?? navigation;
+          root.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
         },
       },
     ]);

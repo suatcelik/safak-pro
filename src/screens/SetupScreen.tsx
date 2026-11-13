@@ -15,7 +15,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootStackParamList } from '../navigation/types';
-import { saveUserSetup, getUserSetup, SetupInfo, clearPaintedDays } from '../utils/storage';
+import { SetupInfo } from '../domain/service';
+import { fromDateKey, toDateKey } from '../domain/dates';
 import { useStore } from '../store/useStore';
 import {
   CalendarDays,
@@ -31,8 +32,12 @@ import {
   X,
   Shield,
 } from 'lucide-react-native';
-import { CITIES } from '../utils/cityData';
-import { setupAllNotifications } from '../utils/notifications';
+import { CITY_NAMES_SORTED } from '../domain/cities';
+import {
+  getNotificationPermission,
+  requestNotificationPermission,
+  rescheduleNotifications,
+} from '../services/notifications';
 
 type SetupNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Setup'>;
 
@@ -49,13 +54,27 @@ const MAX_LEAVE_DAYS = 60;
 const MAX_PENALTY_DAYS = 365;
 const MAX_ROAD_LEAVE_DAYS = 10;
 
-const CITIES_ARRAY = Object.values(CITIES)
-  .map((city) => city.name)
-  .sort((a, b) => a.localeCompare(b, 'tr'));
+/** İzin henüz sorulmadıysa ne işe yaradığını anlatıp sorar. */
+async function askForNotifications(): Promise<void> {
+  if ((await getNotificationPermission()) !== 'undetermined') return;
+  const proceed = await new Promise<boolean>((resolve) =>
+    Alert.alert(
+      'Bildirimler',
+      'Her sabah günün sözünü ve şafak 100, 81 ve terhis gününde müjdeyi bildirimle gönderelim mi? Bildirimler yalnızca cihazında planlanır.',
+      [
+        { text: 'Şimdi Değil', style: 'cancel', onPress: () => resolve(false) },
+        { text: 'İzin Ver', onPress: () => resolve(true) },
+      ],
+      { cancelable: false },
+    ),
+  );
+  if (proceed) await requestNotificationPermission();
+}
 
 export default function SetupScreen() {
   const navigation = useNavigation<SetupNavigationProp>();
-  const setSetup = useStore((state) => state.setSetup);
+  const existing = useStore((s) => s.setup);
+  const saveSetup = useStore((s) => s.saveSetup);
 
   const [userName, setUserName] = useState('');
   const [hometown, setHometown] = useState('');
@@ -64,7 +83,7 @@ export default function SetupScreen() {
 
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(toDateKey(new Date()));
 
   const [usedLeave, setUsedLeave] = useState('');
   const [penalty, setPenalty] = useState('');
@@ -74,24 +93,20 @@ export default function SetupScreen() {
   const [activeCityField, setActiveCityField] = useState<'hometown' | 'militaryCity' | null>(null);
   const [citySearchText, setCitySearchText] = useState('');
 
+  // Bilgileri Güncelle'den gelindiyse formu doldur (yalnızca ilk açılışta)
   useEffect(() => {
-    const loadInitialData = async () => {
-      const existingData = await getUserSetup();
-      if (existingData) {
-        setUserName(existingData.userName || '');
-        setHometown(existingData.hometown || '');
-        setMilitaryCity(existingData.militaryCity || '');
-        setStartDate(existingData.startDate);
-        setDate(new Date(existingData.startDate));
-        setUsedLeave(existingData.usedLeave?.toString() || '');
-        setPenalty(existingData.penalty?.toString() || '');
-        setRoadLeave(existingData.roadLeave?.toString() || '');
-        // Mevcut tip varsa set et (officer dahil)
-        const validType = MILITARY_TYPES.find((t) => t.id === existingData.militaryType);
-        if (validType) setSelectedType(validType.id);
-      }
-    };
-    loadInitialData();
+    if (!existing) return;
+    setUserName(existing.userName || '');
+    setHometown(existing.hometown || '');
+    setMilitaryCity(existing.militaryCity || '');
+    setStartDate(existing.startDate);
+    setDate(fromDateKey(existing.startDate));
+    setUsedLeave(existing.usedLeave?.toString() || '');
+    setPenalty(existing.penalty?.toString() || '');
+    setRoadLeave(existing.roadLeave?.toString() || '');
+    const validType = MILITARY_TYPES.find((t) => t.id === existing.militaryType);
+    if (validType) setSelectedType(validType.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -100,8 +115,7 @@ export default function SetupScreen() {
     }
     if (selectedDate) {
       setDate(selectedDate);
-      const formattedDate = selectedDate.toISOString().split('T')[0];
-      setStartDate(formattedDate);
+      setStartDate(toDateKey(selectedDate));
     }
   };
 
@@ -120,7 +134,7 @@ export default function SetupScreen() {
     setCityModalVisible(false);
   };
 
-  const filteredCities = CITIES_ARRAY.filter((city) =>
+  const filteredCities = CITY_NAMES_SORTED.filter((city) =>
     city.toLocaleLowerCase('tr').includes(citySearchText.toLocaleLowerCase('tr')),
   );
 
@@ -174,11 +188,6 @@ export default function SetupScreen() {
       return;
     }
 
-    const existingData = await getUserSetup();
-    if (existingData && existingData.militaryType !== selectedType) {
-      await clearPaintedDays();
-    }
-
     const payload: SetupInfo = {
       militaryType: selectedType,
       startDate: startDate,
@@ -191,11 +200,12 @@ export default function SetupScreen() {
       roadLeave: parsedRoadLeave,
     };
 
-    await saveUserSetup(payload);
-    setSetup(payload);
-    await setupAllNotifications(payload);
+    saveSetup(payload);
+    await askForNotifications();
+    await rescheduleNotifications(payload);
 
-    navigation.replace('MainTabs');
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.replace('MainTabs');
   };
 
   return (

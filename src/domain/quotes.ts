@@ -1,4 +1,3 @@
-// src/utils/quotes.ts
 export const MILITARY_QUOTES = [
   // Klasik askerlik sözleri
   'Şafak ne kadar karanlık olsa da güneş doğacaktır.',

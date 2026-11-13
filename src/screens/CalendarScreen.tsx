@@ -1,158 +1,27 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
-import {
-  getUserSetup,
-  SetupInfo,
-  getPaintedDays,
-  togglePaintedDay,
-  getLastColor,
-  saveLastColor,
-  PaintedDaysMap,
-} from '../utils/storage';
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Paintbrush, X } from 'lucide-react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { useStore } from '../store/useStore';
+import { buildCalendarLayout } from '../domain/calendarLayout';
+import { effectiveTotalOf } from '../domain/service';
 
 const COLORS = ['#10b981', '#3b82f6', '#a855f7', '#f43f5e', '#f97316', '#eab308'];
 
-// --- KUSURSUZ 180 MATRİSLERİ ---
+const CELL = {
+  28: { size: 'w-[48px] h-[48px] m-1', text: 'text-base' },
+  180: { size: 'w-[26px] h-[22px] m-[1px]', text: 'text-[9px]' },
+  365: { size: 'w-[22px] h-[18px] m-[1px]', text: 'text-[8px]' },
+} as const;
 
-// 1 Rakamı (Kırmızı tasarıma göre baştan çizildi)
-const oneLayout = [
-  [1, 2, 3, 4, 0],
-  [5, 6, 7, 8, 0],
-  [0, 9, 10, 11, 0],
-  [0, 12, 13, 14, 0],
-  [0, 15, 16, 17, 0],
-  [0, 18, 19, 20, 0],
-  [0, 21, 22, 23, 0],
-  [0, 24, 25, 26, 0],
-  [0, 27, 28, 29, 0],
-  [0, 30, 31, 32, 0],
-  [0, 33, 34, 35, 0],
-  [0, 36, 37, 38, 0],
-  [39, 40, 41, 42, 43],
-  [44, 45, 46, 47, 48],
-];
-
-// 8 Rakamı
-const eightLayout = [
-  [49, 50, 51, 52, 53, 54],
-  [55, 56, 57, 58, 59, 60],
-  [61, 62, 0, 0, 63, 64],
-  [65, 66, 0, 0, 67, 68],
-  [69, 70, 0, 0, 71, 72],
-  [73, 74, 0, 0, 75, 76],
-  [77, 78, 79, 80, 81, 82],
-  [83, 84, 85, 86, 87, 88],
-  [89, 90, 0, 0, 91, 92],
-  [93, 94, 0, 0, 95, 96],
-  [97, 98, 0, 0, 99, 100],
-  [101, 102, 0, 0, 103, 104],
-  [105, 106, 107, 108, 109, 110],
-  [111, 112, 113, 114, 115, 116],
-];
-
-// 0 Rakamı
-const zeroLayout = [
-  [117, 118, 119, 120, 121, 122],
-  [123, 124, 125, 126, 127, 128],
-  [129, 130, 0, 0, 131, 132],
-  [133, 134, 0, 0, 135, 136],
-  [137, 138, 0, 0, 139, 140],
-  [141, 142, 0, 0, 143, 144],
-  [145, 146, 0, 0, 147, 148],
-  [149, 150, 0, 0, 151, 152],
-  [153, 154, 0, 0, 155, 156],
-  [157, 158, 0, 0, 159, 160],
-  [161, 162, 0, 0, 163, 164],
-  [165, 166, 0, 0, 167, 168],
-  [169, 170, 171, 172, 173, 174],
-  [175, 176, 177, 178, 179, 180],
-];
-
-const bedelliTwoLayout = [
-  [1, 2, 3, 4],
-  [0, 0, 0, 5],
-  [6, 7, 8, 9],
-  [10, 0, 0, 0],
-  [11, 12, 13, 14],
-];
-const bedelliEightLayout = [
-  [15, 16, 17, 18],
-  [19, 0, 0, 20],
-  [0, 21, 22, 0],
-  [23, 0, 0, 24],
-  [25, 26, 27, 28],
-];
-
-const shape3 = [
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 1, 1, 1],
-  [0, 0, 0, 0, 1, 1, 1],
-  [0, 0, 0, 0, 1, 1, 1],
-  [0, 1, 1, 1, 1, 1, 1],
-  [0, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 1, 1, 1],
-  [0, 0, 0, 0, 1, 1, 1],
-  [0, 0, 0, 0, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-];
-const shape6 = [
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 0, 0, 0, 0],
-  [1, 1, 1, 0, 0, 0, 0],
-  [1, 1, 1, 0, 0, 0, 0],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 0, 0, 1, 1],
-  [1, 1, 1, 0, 0, 1, 1],
-  [1, 1, 1, 0, 0, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-];
-const shape5 = [
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 0, 0, 0, 0],
-  [1, 1, 1, 0, 0, 0, 0],
-  [1, 1, 1, 0, 0, 0, 0],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 0, 1, 1],
-  [0, 0, 0, 0, 0, 1, 1],
-  [0, 0, 0, 0, 0, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-];
-
-const generateMatrix = (shape: number[][], startNumber: number, maxDays: number) => {
-  let currentNumber = startNumber;
-  const result: number[][] = [];
-  for (let r = 0; r < shape.length; r++) {
-    const row: number[] = [];
-    for (let c = 0; c < shape[r].length; c++) {
-      if (shape[r][c] === 1 && currentNumber <= maxDays) {
-        row.push(currentNumber);
-        currentNumber++;
-      } else {
-        row.push(0);
-      }
-    }
-    result.push(row);
-  }
-  return { layout: result, nextNumber: currentNumber };
-};
-
-export default function CalendarScreen({ navigation }: any) {
-  const [setup, setSetup] = useState<SetupInfo | null>(null);
-  const [paintedDays, setPaintedDays] = useState<PaintedDaysMap>({});
-  const [selectedColor, setSelectedColor] = useState<string>('#10b981');
-  const [refreshing, setRefreshing] = useState(false);
-  const [daysArray, setDaysArray] = useState<number[]>([]);
+export default function CalendarScreen() {
+  const navigation = useNavigation();
+  const setup = useStore((s) => s.setup);
+  const paintedDays = useStore((s) => s.paintedDays);
+  const selectedColor = useStore((s) => s.lastColor);
+  const togglePaintedDay = useStore((s) => s.togglePaintedDay);
+  const setLastColor = useStore((s) => s.setLastColor);
 
   useFocusEffect(
     useCallback(() => {
@@ -163,140 +32,52 @@ export default function CalendarScreen({ navigation }: any) {
     }, []),
   );
 
-  const loadData = async () => {
-    const data = await getUserSetup();
-    const painted = await getPaintedDays();
-    const savedColor = await getLastColor();
+  const layout = useMemo(
+    () => (setup ? buildCalendarLayout(setup.totalDays, effectiveTotalOf(setup)) : null),
+    [setup],
+  );
 
-    if (data) {
-      setSetup(data);
-      setDaysArray(Array.from({ length: data.totalDays }, (_, i) => i + 1));
-    }
-    setPaintedDays(painted);
-    setSelectedColor(savedColor);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  };
-
-  const handlePaintDay = async (day: number) => {
-    const updated = await togglePaintedDay(day, selectedColor);
-    setPaintedDays(updated);
-  };
-
-  const handleColorSelect = async (color: string) => {
-    setSelectedColor(color);
-    await saveLastColor(color);
-  };
-
-  if (!setup)
+  if (!setup || !layout) {
     return (
       <View className="flex-1 items-center justify-center bg-safakDark">
-        <Text className="text-white">Yükleniyor...</Text>
+        <Text className="text-white">Önce askerlik bilgilerini gir.</Text>
       </View>
     );
+  }
 
-  const totalDays = setup.totalDays;
+  const sizeKey = setup.totalDays <= 28 ? 28 : setup.totalDays <= 180 ? 180 : 365;
+  const cell = CELL[sizeKey];
 
-  const gen3 = generateMatrix(shape3, 1, totalDays);
-  const gen6 = generateMatrix(shape6, gen3.nextNumber, totalDays);
-  const gen5 = generateMatrix(shape5, gen6.nextNumber, totalDays);
-
-  const renderCell = (
-    dayNumber: number,
-    rowIndex: number,
-    colIndex: number,
-    layoutName: string,
-    sizeClass: string,
-    textClass: string,
-  ) => {
-    if (dayNumber === 0)
-      return (
-        <View key={`empty-${layoutName}-${rowIndex}-${colIndex}`} className={`${sizeClass}`} />
-      );
-    if (dayNumber > totalDays)
-      return <View key={`hidden-${dayNumber}`} className={`${sizeClass}`} />;
-
-    const cellColor = paintedDays[dayNumber];
-    const isPainted = !!cellColor;
-
+  const renderCell = (day: number, key: string, sizeClass: string, textClass: string) => {
+    if (day === 0) return <View key={key} className={sizeClass} />;
+    const color = paintedDays[day];
     return (
       <TouchableOpacity
-        key={`day-${dayNumber}`}
-        onPress={() => handlePaintDay(dayNumber)}
-        style={isPainted ? { backgroundColor: cellColor, borderColor: cellColor } : {}}
-        className={`${sizeClass} items-center justify-center rounded-sm border ${!isPainted ? 'border-gray-700 bg-safakSecondary' : ''}`}
+        key={key}
+        onPress={() => togglePaintedDay(day, selectedColor)}
+        style={color ? { backgroundColor: color, borderColor: color } : undefined}
+        className={`${sizeClass} items-center justify-center rounded-sm border ${
+          color ? '' : 'border-gray-700 bg-safakSecondary'
+        }`}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={`Gün ${day}${color ? ', boyalı' : ''}`}
       >
-        <Text className={`font-bold ${textClass} ${isPainted ? 'text-white' : 'text-gray-400'}`}>
-          {dayNumber}
+        <Text className={`font-bold ${textClass} ${color ? 'text-white' : 'text-gray-400'}`}>
+          {day}
         </Text>
       </TouchableOpacity>
     );
   };
 
-  const renderNumberLayout = (
-    layout: number[][],
-    layoutName: string,
-    sizeClass: string,
-    textClass: string,
-  ) => (
-    <View className="flex-col">
-      {layout.map((row, rowIndex) => (
-        <View key={`row-${layoutName}-${rowIndex}`} className="flex-row">
-          {row.map((cell, colIndex) =>
-            renderCell(cell, rowIndex, colIndex, layoutName, sizeClass, textClass),
-          )}
-        </View>
-      ))}
-    </View>
-  );
-
-  // Kutu boyutları referans tasarımdaki gibi kare-vari (w-[22px] h-[22px]) yapıldı.
-  const renderContent = () => {
-    if (totalDays <= 30) {
-      return (
-        <View className="w-full flex-row items-center justify-center gap-x-20 px-2">
-          {renderNumberLayout(bedelliTwoLayout, 'two', 'w-[48px] h-[48px] m-1', 'text-base')}
-          {renderNumberLayout(bedelliEightLayout, 'eight', 'w-[48px] h-[48px] m-1', 'text-base')}
-        </View>
-      );
-    } else if (totalDays <= 180) {
-      return (
-        <View className="w-full flex-row items-center justify-center gap-x-20 px-1">
-          {renderNumberLayout(oneLayout, 'one', 'w-[28px] h-[22px] m-[1px]', 'text-[10px]')}
-          {renderNumberLayout(eightLayout, 'eight', 'w-[28px] h-[22px] m-[1px]', 'text-[10px]')}
-          {renderNumberLayout(zeroLayout, 'zero', 'w-[28px] h-[22px] m-[1px]', 'text-[10px]')}
-        </View>
-      );
-    } else {
-      return (
-        <View className="w-full flex-row items-center justify-center gap-x-20 px-1">
-          {renderNumberLayout(gen3.layout, 'three', 'w-[28px] h-[22px] m-[1px]', 'text-[9px]')}
-          {renderNumberLayout(gen6.layout, 'six', 'w-[28px] h-[22px] m-[1px]', 'text-[9px]')}
-          {renderNumberLayout(gen5.layout, 'five', 'w-[28px] h-[22px] m-[1px]', 'text-[9px]')}
-        </View>
-      );
-    }
-  };
-
-  const layoutMaxCapacity = totalDays <= 30 ? 28 : totalDays <= 180 ? 180 : 365;
-  const extraDays = daysArray.filter((day) => day > layoutMaxCapacity);
-
   return (
     <View className="relative flex-1 flex-row bg-safakDark">
-      {/* GERİ DÖN (KAPAT) BUTONU */}
       <TouchableOpacity
-        onPress={() => navigation.navigate('Home')}
+        onPress={() => navigation.navigate('Home' as never)}
         className="absolute left-8 top-6 z-50 h-10 w-10 items-center justify-center rounded-full border border-gray-700 bg-safakSecondary shadow-lg"
         activeOpacity={0.7}
+        accessibilityLabel="Takvimi kapat"
+        accessibilityRole="button"
       >
         <X size={24} color="#f8fafc" />
       </TouchableOpacity>
@@ -306,13 +87,6 @@ export default function CalendarScreen({ navigation }: any) {
           contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
           showsVerticalScrollIndicator={false}
           bounces={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={selectedColor}
-            />
-          }
         >
           <ScrollView
             horizontal
@@ -320,15 +94,27 @@ export default function CalendarScreen({ navigation }: any) {
             bounces={false}
             contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
           >
-            {renderContent()}
+            <View className="w-full flex-row items-center justify-center gap-x-10 px-2 py-4">
+              {layout.digits.map((digit, di) => (
+                <View key={`digit-${di}`} className="flex-col">
+                  {digit.rows.map((row, ri) => (
+                    <View key={`row-${di}-${ri}`} className="flex-row">
+                      {row.map((day, ci) =>
+                        renderCell(day, `c-${di}-${ri}-${ci}`, cell.size, cell.text),
+                      )}
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
           </ScrollView>
 
-          {extraDays.length > 0 && (
+          {layout.extraDays.length > 0 && (
             <View className="mb-6 mt-4 items-center px-4">
-              <Text className="mb-2 text-xs text-gray-500">Ekstra Günler (Cezalar vb.)</Text>
+              <Text className="mb-2 text-xs text-gray-500">Ekstra Günler (ceza ve izin)</Text>
               <View className="max-w-[500px] flex-row flex-wrap justify-center">
-                {extraDays.map((day) =>
-                  renderCell(day, 0, day, 'extra', 'w-[22px] h-[22px] m-[2px]', 'text-[10px]'),
+                {layout.extraDays.map((day) =>
+                  renderCell(day, `x-${day}`, 'w-[26px] h-[22px] m-[2px]', 'text-[9px]'),
                 )}
               </View>
             </View>
@@ -336,23 +122,24 @@ export default function CalendarScreen({ navigation }: any) {
         </ScrollView>
       </View>
 
-      {/* Sağ Taraf: Renk Paleti Menüsü */}
       <View className="w-18 items-center border-l border-gray-800 bg-safakSecondary py-8 shadow-2xl">
         <View className="mb-6 rounded-full border border-gray-700 bg-safakDark p-2">
           <Paintbrush size={24} color={selectedColor} />
         </View>
-
         <View className="flex-1 justify-center gap-y-5">
           {COLORS.map((c) => (
             <TouchableOpacity
               key={c}
-              onPress={() => handleColorSelect(c)}
+              onPress={() => setLastColor(c)}
               style={{
                 backgroundColor: c,
                 borderWidth: selectedColor === c ? 3 : 0,
                 borderColor: 'white',
               }}
               className="h-8 w-8 rounded-full shadow-lg"
+              accessibilityRole="button"
+              accessibilityLabel={`Renk ${c}`}
+              accessibilityState={{ selected: selectedColor === c }}
             />
           ))}
         </View>

@@ -35,7 +35,8 @@ src/
     <özellik>/   Özelliğe ait bileşenler
   screens/       Ekranlar
   navigation/    React Navigation yapısı
-  utils/         Bildirimler, sözler, il listesi
+  services/      Yan etkili servisler (bildirim planlama)
+  hooks/         React kancaları (useToday)
   assets/illustrations/
 __tests__/       Jest testleri
 docs/            Görev planı ve tasarım notları

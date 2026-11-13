@@ -4,7 +4,7 @@
  * Kurulum: npm install --save-dev jest jest-expo @types/jest
  * Çalıştır: npx jest
  */
-import { MILITARY_QUOTES, getRandomQuote } from '../src/utils/quotes';
+import { MILITARY_QUOTES, getRandomQuote } from '../src/domain/quotes';
 
 describe('MILITARY_QUOTES', () => {
   it('en az 30 söz içermelidir', () => {
