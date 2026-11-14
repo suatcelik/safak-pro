@@ -105,10 +105,14 @@ async function shot({ name, width, height, scale, state, steps }) {
 
 const devices = {
   iphone: { width: 440, height: 956, scale: 3 }, // 6.9" → 1320×2868
+  iphone65: { width: 428, height: 926, scale: 3 }, // 6.5" → 1284×2778
   ipad: { width: 1032, height: 1376, scale: 2 }, // 13"  → 2064×2752
 };
+// SHOT_DEVICES=iphone65 gibi virgüllü liste ile yalnızca seçilen cihazlar çekilir
+const only = process.env.SHOT_DEVICES?.split(',');
 
 for (const [dev, d] of Object.entries(devices)) {
+  if (only && !only.includes(dev)) continue;
   console.log(dev);
   await shot({ name: `${dev}-1-home`, ...d, state: FULL });
   await shot({
