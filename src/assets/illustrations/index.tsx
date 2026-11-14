@@ -25,7 +25,7 @@ export function DeckLogo({
       width={size}
       height={size}
       viewBox="92 120 840 840"
-      accessibilityLabel="Şafak Sayar logosu"
+      accessibilityLabel="Şafak Sayar Pro logosu"
     >
       <Rect
         x={282}

@@ -1,5 +1,5 @@
 /**
- * Şafak Sayar tasarım token'ları — uygulamadaki tek renk/yazı/aralık kaynağı.
+ * Şafak Sayar Pro tasarım token'ları — uygulamadaki tek renk/yazı/aralık kaynağı.
  * Ekran ve bileşenler stillerini buradan alır; başka yerde ham hex kullanılmaz.
  */
 

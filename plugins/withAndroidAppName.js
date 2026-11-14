@@ -1,5 +1,5 @@
 // Android ana ekran etiketini (strings.xml app_name) Türkçe ada çevirir.
-// app.json'daki iç ad Xcode hedef adıyla uyum için ASCII tutulur ("Safak Sayar").
+// app.json'daki iç ad Xcode hedef adıyla uyum için ASCII tutulur ("Safak Sayar Pro").
 const { AndroidConfig, withStringsXml } = require('expo/config-plugins');
 
 module.exports = function withAndroidAppName(config, { name }) {

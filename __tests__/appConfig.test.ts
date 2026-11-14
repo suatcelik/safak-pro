@@ -15,7 +15,7 @@ describe('app.json', () => {
   });
 
   it('iOS ana ekranda Türkçe adı gösterir', () => {
-    expect(app.ios.infoPlist.CFBundleDisplayName).toBe('Şafak Sayar');
+    expect(app.ios.infoPlist.CFBundleDisplayName).toBe('Şafak Sayar Pro');
   });
 
   // 1.x iPad'i destekliyordu; App Store, güncellemenin desteklenen cihazları
@@ -30,6 +30,6 @@ describe('app.json', () => {
     const plugin = app.plugins.find(
       (p: unknown) => Array.isArray(p) && p[0] === './plugins/withAndroidAppName',
     );
-    expect(plugin?.[1]).toEqual({ name: 'Şafak Sayar' });
+    expect(plugin?.[1]).toEqual({ name: 'Şafak Sayar Pro' });
   });
 });

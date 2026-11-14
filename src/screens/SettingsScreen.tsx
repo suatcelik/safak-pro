@@ -47,7 +47,7 @@ export default function SettingsScreen() {
     if (status !== 'granted') {
       Alert.alert(
         'Bildirim izni kapalı',
-        'Bildirimleri açmak için telefonunun ayarlarından Şafak Sayar için izin ver.',
+        'Bildirimleri açmak için telefonunun ayarlarından Şafak Sayar Pro için izin ver.',
         [
           { text: 'Vazgeç', style: 'cancel' },
           { text: 'Ayarları aç', onPress: () => Linking.openSettings() },

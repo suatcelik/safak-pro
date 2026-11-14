@@ -71,7 +71,7 @@ export const ShareCard = forwardRef<ShareCardRef, Props>(function ShareCard(
               </Typo>
             </View>
             <Typo variant="bodyStrong" color="ink" size={16 * k}>
-              Şafak Sayar
+              Şafak Sayar Pro
             </Typo>
           </>
         )}
@@ -115,7 +115,7 @@ export const ShareCard = forwardRef<ShareCardRef, Props>(function ShareCard(
             </Typo>
           </View>
           <Typo variant="bodyStrong" color="ink" size={15 * k}>
-            Şafak Sayar
+            Şafak Sayar Pro
           </Typo>
         </View>
       ) : (

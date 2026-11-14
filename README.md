@@ -1,4 +1,4 @@
-# Şafak Sayar
+# Şafak Sayar Pro
 
 Askerlik süresini gün gün sayan, takvimde günleri boyamaya ve kilometre taşlarını takip etmeye yarayan mobil uygulama. Reklam yok, satın alma yok, veri toplamıyor: her şey cihazda kalır.
 

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Safak Sayar",
+    "name": "Safak Sayar Pro",
     "slug": "safak-pro",
     "version": "2.0.0",
     "orientation": "default",
@@ -11,7 +11,7 @@
       "bundleIdentifier": "com.tabugoapp.safakpro",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "CFBundleDisplayName": "Şafak Sayar"
+        "CFBundleDisplayName": "Şafak Sayar Pro"
       },
       "requireFullScreen": true
     },
@@ -57,7 +57,7 @@
       [
         "./plugins/withAndroidAppName",
         {
-          "name": "Şafak Sayar"
+          "name": "Şafak Sayar Pro"
         }
       ]
     ],
