@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, TextProps, TextStyle } from 'react-native';
 import { colors, ColorToken, fonts, fontSize } from '../../theme/tokens';
+import { upperTr } from '../../domain/text';
 
 type Variant =
   | 'hero'
@@ -47,7 +48,7 @@ const VARIANTS: Record<Variant, TextStyle> = {
     fontSize: fontSize.caption,
     lineHeight: 18,
     letterSpacing: 1,
-    textTransform: 'uppercase',
+    // Büyük harf textTransform ile değil upperTr ile (Türkçe i → İ)
   },
 };
 
@@ -64,6 +65,7 @@ export function Typo({
   size,
   align,
   style,
+  children,
   ...rest
 }: TypographyProps) {
   const base = VARIANTS[variant];
@@ -83,7 +85,9 @@ export function Typo({
           : null,
         style,
       ]}
-    />
+    >
+      {variant === 'label' ? upperTr(children) : children}
+    </Text>
   );
 }
 
