@@ -1,98 +1,84 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
-import { Calendar, Target, Flag } from 'lucide-react-native';
+import { Pressable, View } from 'react-native';
+import { ArrowRight } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { setFirstLaunch } from '../utils/storage';
+import { useStore } from '../store/useStore';
+import { colors } from '../theme/tokens';
+import { Body, Button, Heading, PageDots, Screen, ScreenTone, Typo } from '../components/ui';
+import { CountdownArt, MilestonesArt, PaintArt } from '../components/onboarding/OnboardingArt';
 
-type OnboardingNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
+type Nav = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 
-const { width } = Dimensions.get('window');
-
-const slides = [
-    {
-        id: '1',
-        title: "Şafağını Say",
-        description: "Askersen, şafağını en güzel şekilde hesaplamak için doğru yerdesin.",
-        icon: <Calendar size={80} color="#10b981" />
-    },
-    {
-        id: '2',
-        title: "Motivasyon",
-        description: "Her gün sana moral verecek yeni sözlerle askerliğini renklendir.",
-        icon: <Target size={80} color="#10b981" />
-    },
-    {
-        id: '3',
-        title: "Hemen Başla",
-        description: "Bilgilerini gir ve vatan borcunu saymaya başla!",
-        icon: <Flag size={80} color="#10b981" />
-    }
+const SLIDES: { tone: ScreenTone; title: string; text: string; Art: () => React.JSX.Element }[] = [
+  {
+    tone: 'accent',
+    title: 'Şafağını say',
+    text: 'Kalan günün, terhis tarihin ve ilerlemen her sabah tek bakışta.',
+    Art: CountdownArt,
+  },
+  {
+    tone: 'pink',
+    title: 'Günlerini boya',
+    text: 'Biten her günü takvimde istediğin renkle boya, şafağın rakamları dolsun.',
+    Art: PaintArt,
+  },
+  {
+    tone: 'purple',
+    title: 'Kilometre taşlarını aç',
+    text: 'Acemilikten doğan güneşe, her eşiği geçtikçe yeni bir kart açılır.',
+    Art: MilestonesArt,
+  },
 ];
 
 export default function OnboardingScreen() {
-    const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-    const navigation = useNavigation<OnboardingNavigationProp>();
+  const [index, setIndex] = useState(0);
+  const navigation = useNavigation<Nav>();
+  const completeOnboarding = useStore((s) => s.completeOnboarding);
+  const slide = SLIDES[index];
+  const last = index === SLIDES.length - 1;
 
-    const nextSlide = async () => {
-        if (currentSlideIndex < slides.length - 1) {
-            setCurrentSlideIndex(currentSlideIndex + 1);
-        } else {
-            await setFirstLaunch(false); // Onboarding tamamlandı
-            navigation.replace('Setup');
-        }
-    };
+  const finish = () => {
+    completeOnboarding();
+    navigation.replace('Setup');
+  };
 
-    const skipSlide = async () => {
-        await setFirstLaunch(false);
-        navigation.replace('Setup');
-    };
+  return (
+    <Screen tone={slide.tone}>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+        <Pressable
+          onPress={finish}
+          accessibilityRole="button"
+          accessibilityLabel="Tanıtımı atla"
+          style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}
+        >
+          <Typo variant="bodyStrong" color="ink">
+            Atla
+          </Typo>
+        </Pressable>
+      </View>
 
-    const currentSlide = slides[currentSlideIndex];
+      <View style={{ flex: 1 }}>
+        <slide.Art />
+      </View>
 
-    return (
-        <View className="flex-1 bg-safakDark p-6 items-center justify-center">
+      <View style={{ gap: 12, marginBottom: 32 }}>
+        <Heading color="ink" size={40} style={{ lineHeight: 42, letterSpacing: -1.2 }}>
+          {slide.title}
+        </Heading>
+        <Body color="ink">{slide.text}</Body>
+      </View>
 
-            {/* İkon */}
-            <View className="flex-1 justify-center items-center">
-                <View className="bg-safakSecondary p-8 rounded-full shadow-lg">
-                    {currentSlide.icon}
-                </View>
-                <Text className="text-white text-3xl font-bold mt-10 text-center">
-                    {currentSlide.title}
-                </Text>
-                <Text className="text-gray-400 text-lg mt-4 text-center px-4 leading-7">
-                    {currentSlide.description}
-                </Text>
-            </View>
-
-            {/* Noktalar */}
-            <View className="flex-row mb-12">
-                {slides.map((_, index) => (
-                    <View
-                        key={index}
-                        className={`h-2 rounded-full mx-1 ${currentSlideIndex === index ? 'w-8 bg-safakPrimary' : 'w-2 bg-gray-600'
-                            }`}
-                    />
-                ))}
-            </View>
-
-            {/* Butonlar */}
-            <View className="w-full flex-row justify-between items-center mb-8 px-4">
-                <TouchableOpacity onPress={skipSlide}>
-                    <Text className="text-gray-400 text-lg font-semibold">Atla</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    className="bg-safakPrimary py-4 px-10 rounded-full shadow-lg"
-                    onPress={nextSlide}
-                >
-                    <Text className="text-safakDark font-bold text-lg">
-                        {currentSlideIndex === slides.length - 1 ? "Başla" : "İleri"}
-                    </Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <PageDots count={SLIDES.length} index={index} />
+        <Button
+          variant="secondary"
+          label={last ? 'Başla' : 'İleri'}
+          icon={<ArrowRight size={20} color={colors.white} strokeWidth={2.5} />}
+          onPress={() => (last ? finish() : setIndex(index + 1))}
+        />
+      </View>
+    </Screen>
+  );
 }
